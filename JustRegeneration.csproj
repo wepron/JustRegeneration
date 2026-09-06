@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{68970A37-7413-4826-B710-F60DD6965384}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>JustRegeneration</RootNamespace>
+    <AssemblyName>JustRegeneration</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\JustRegeneration\bin\Win64_Shipping_Client\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.Harmony">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client\Bannerlord.Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.0.0">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.0.0.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.0.1">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.0.1.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.0.2">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.0.2.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.0.3">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.0.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.0">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.0.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.1">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.1.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.2">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.2.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.3">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.4">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.4.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.5.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.1.6">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.1.6.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.10">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.10.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.11">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.11.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.12">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.12.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.4">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.4.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.5.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.6">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.6.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.7">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.7.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.8">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.8.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.2.9">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.2.9.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.10">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.10.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.11">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.11.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.12">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.12.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.13">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.13.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.14">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.14.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.15">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.15.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.4">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.4.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.5.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.6">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.6.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.7">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.7.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.8">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.8.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.3.9">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.3.9.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.0">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.0.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.1">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.1.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.2">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.2.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.3">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.4">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.4.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.5.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.6">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.6.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.7">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.7.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.4.8">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.4.8.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.MBOptionScreen.v1.5.1">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.MBOptionScreen.v1.5.1.dll</HintPath>
+    </Reference>
+    <Reference Include="Bannerlord.ModuleLoader.Bannerlord.MBOptionScreen">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\Bannerlord.ModuleLoader.Bannerlord.MBOptionScreen.dll</HintPath>
+    </Reference>
+    <Reference Include="MCM.UI.Adapter.MCMv5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\MCM.UI.Adapter.MCMv5.dll</HintPath>
+    </Reference>
+    <Reference Include="MCMv5">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\MCMv5.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TaleWorlds.AchievementSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.AchievementSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.ActivitySystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.ActivitySystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.CampaignSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.CampaignSystem.ViewModelCollection">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.ViewModelCollection.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Core.ViewModelCollection">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Core.ViewModelCollection.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Diamond">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Diamond.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Diamond.AccessProvider.GDK">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Diamond.AccessProvider.GDK.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Diamond.AccessProvider.GOG">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Diamond.AccessProvider.GOG.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Diamond.AccessProvider.Steam">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Diamond.AccessProvider.Steam.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Diamond.AccessProvider.Test">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Diamond.AccessProvider.Test.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.DotNet">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.DotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.DotNet.AutoGenerated">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.DotNet.AutoGenerated.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Engine.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine.AutoGenerated">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Engine.AutoGenerated.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine.GauntletUI">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Engine.GauntletUI.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.GauntletUI">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.GauntletUI.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.GauntletUI.CodeGenerator">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.GauntletUI.CodeGenerator.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.GauntletUI.Data">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.GauntletUI.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.GauntletUI.ExtraWidgets">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.GauntletUI.ExtraWidgets.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.GauntletUI.PrefabSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.GauntletUI.PrefabSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.InputSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.InputSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.LinQuick">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.LinQuick.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Localization">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Localization.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.ModuleManager">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.ModuleManager.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.AutoGenerated">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.AutoGenerated.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.Diamond">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.Diamond.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.GauntletUI.Widgets">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.GauntletUI.Widgets.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.Helpers">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.Launcher.Library">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.Launcher.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.Launcher.Steam">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.Launcher.Steam.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.Multiplayer.Test">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.Multiplayer.Test.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.ViewModelCollection">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.ViewModelCollection.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.NavigationSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.NavigationSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Network">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Network.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.ObjectSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.ObjectSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PlatformService">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PlatformService.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PlatformService.Epic">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PlatformService.Epic.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PlatformService.GOG">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PlatformService.GOG.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PlatformService.Steam">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PlatformService.Steam.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PlayerServices">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PlayerServices.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.PSAI">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.PSAI.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.SaveSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.SaveSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.ScreenSystem">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.ScreenSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.ServiceDiscovery.Client">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.ServiceDiscovery.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.Starter.Library">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.Starter.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.TwoDimension">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.TwoDimension.dll</HintPath>
+    </Reference>
+    <Reference Include="TaleWorlds.TwoDimension.Standalone">
+      <HintPath>D:\Games\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.TwoDimension.Standalone.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="JustRegeneration.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
