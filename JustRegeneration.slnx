@@ -1,3 +1,10 @@
 <Solution>
-  <Project Path="JustRegeneration.csproj" />
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="JustRegeneration.csproj" Id="68970a37-7413-4826-b710-f60dd6965384">
+    <BuildType Solution="Debug|Any CPU" Project="Release" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
 </Solution>
