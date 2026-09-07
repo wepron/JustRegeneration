@@ -184,6 +184,7 @@ namespace JustRegeneration
 
                 _isGameFullyLoaded = true;
                 LoadData();
+                CleanupSaveFile();
 
                 CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, (CampaignGameStarter starter) =>
                 {
@@ -191,6 +192,8 @@ namespace JustRegeneration
                     SyncAgeOnLoad();
                     var settings = JustRegenerationSettings.Instance;
                     settings?.UpdatePlayerDisplayKills();
+                    CleanupSaveFile();
+                    settings?.RefreshHeroList();
                 });
 
                 CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, () =>
@@ -646,6 +649,115 @@ namespace JustRegeneration
             catch (Exception ex) { LogError("UpdateRegeneration", ex); }
         }
 
+        // =====================================================================
+        // МЕТОДЫ ДЛЯ РАБОТЫ СО СПИСКОМ КЛАНА И СБРОСОМ СЧЁТЧИКОВ
+        // =====================================================================
+
+        public List<string> GetCurrentClanMemberIds()
+        {
+            var result = new List<string>();
+            if (!_isGameFullyLoaded || Campaign.Current == null || Hero.MainHero == null)
+            {
+                LogError("GetCurrentClanMemberIds", new Exception($"Game not fully loaded: _isGameFullyLoaded={_isGameFullyLoaded}, Campaign.Current={Campaign.Current != null}, Hero.MainHero={Hero.MainHero != null}"));
+                return result;
+            }
+
+            var clan = Hero.MainHero.Clan;
+            if (clan == null)
+            {
+                LogError("GetCurrentClanMemberIds", new Exception("Clan is null for MainHero"));
+                return result;
+            }
+
+            foreach (var hero in clan.Heroes)
+            {
+                if (hero != null && hero.IsAlive)
+                    result.Add(hero.StringId);
+            }
+            return result;
+        }
+
+        public void CleanupSaveFile()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                var currentIds = GetCurrentClanMemberIds();
+                if (currentIds.Count == 0) return;
+
+                var toRemove = settings.AccumulatedKillsPerHero.Keys
+                    .Where(id => !currentIds.Contains(id))
+                    .ToList();
+
+                foreach (var id in toRemove)
+                    settings.AccumulatedKillsPerHero.Remove(id);
+
+                if (toRemove.Count > 0)
+                {
+                    SaveData();
+                }
+            }
+            catch (Exception ex) { LogError("CleanupSaveFile", ex); }
+        }
+
+        public int GetKillsForHeroId(string heroId)
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null || string.IsNullOrEmpty(heroId))
+                    return 0;
+                return settings.AccumulatedKillsPerHero.TryGetValue(heroId, out int kills) ? kills : 0;
+            }
+            catch { return 0; }
+        }
+
+        public void ResetKillsForHeroId(string heroId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(heroId)) return;
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+                if (settings.AccumulatedKillsPerHero.ContainsKey(heroId))
+                    settings.AccumulatedKillsPerHero[heroId] = 0;
+                else
+                    settings.AccumulatedKillsPerHero[heroId] = 0;
+                SaveData();
+                if (Campaign.Current != null)
+                {
+                    TextObject msg = new TextObject("{=JR_ResetSingleDone}Just Regeneration: Kill counter reset for hero.");
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                }
+            }
+            catch (Exception ex) { LogError("ResetKillsForHeroId", ex); }
+        }
+
+        public void ResetAllKills()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+                var currentIds = GetCurrentClanMemberIds();
+                foreach (var id in currentIds)
+                {
+                    settings.AccumulatedKillsPerHero[id] = 0;
+                }
+                SaveData();
+                if (Campaign.Current != null)
+                {
+                    TextObject msg = new TextObject("{=JR_ResetAllDone}Just Regeneration: All clan member kill counters reset to 0.");
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                }
+            }
+            catch (Exception ex) { LogError("ResetAllKills", ex); }
+        }
+
+        // =====================================================================
+
         private void SaveData()
         {
             try
@@ -699,280 +811,12 @@ namespace JustRegeneration
         }
 
         private void OnBeforePlayerCharacterChanged(Hero oldPlayer, Hero newPlayer) { }
-        private void OnPlayerCharacterChanged(Hero oldPlayer, Hero newPlayer, MobileParty newMainParty, bool isMainPartyChanged) { }
-    }
 
-    // =========================================================================
-    // 3. НАСТРОЙКИ (MCM)
-    // =========================================================================
-
-    public class JustRegenerationSettings : AttributeGlobalSettings<JustRegenerationSettings>
-    {
-        public override string Id => "JustRegenerationSettings";
-        public override string DisplayName => "Just Regeneration";
-        public override string FormatType => "json";
-
-        // --- Основные настройки ---
-        private bool _enableMod = false;
-        [SettingPropertyGroup("{=JR_GroupMain}Main", GroupOrder = -1)]
-        [SettingPropertyBool("{=JR_EnableMod}Enable mod", Order = 0, RequireRestart = false, HintText = "{=JR_EnableMod_Hint}Master switch for all features.")]
-        public bool EnableMod
+        private void OnPlayerCharacterChanged(Hero oldPlayer, Hero newPlayer, MobileParty newMainParty, bool isMainPartyChanged)
         {
-            get => _enableMod;
-            set { if (_enableMod != value) { _enableMod = value; OnPropertyChanged(nameof(EnableMod)); } }
-        }
-
-        // --- God Mode ---
-        private bool _godModePlayer = false;
-        [SettingPropertyGroup("{=JR_GroupGodMode}God Mode")]
-        [SettingPropertyBool("{=JR_GodModePlayer}God Mode (Player)", Order = 10, RequireRestart = false, HintText = "{=JR_GodModePlayer_Hint}Player takes no damage.")]
-        public bool GodModePlayer
-        {
-            get => _godModePlayer;
-            set { if (_godModePlayer != value) { _godModePlayer = value; if (value) _enablePlayerRegen = false; OnPropertyChanged(nameof(EnablePlayerRegen)); OnPropertyChanged(nameof(GodModePlayer)); } }
-        }
-
-        private bool _godModeMount = false;
-        [SettingPropertyGroup("{=JR_GroupGodMode}God Mode")]
-        [SettingPropertyBool("{=JR_GodModeMount}God Mode (Mount)", Order = 11, RequireRestart = false, HintText = "{=JR_GodModeMount_Hint}Player's mount takes no damage.")]
-        public bool GodModeMount
-        {
-            get => _godModeMount;
-            set { if (_godModeMount != value) { _godModeMount = value; if (value) _enableMountRegen = false; OnPropertyChanged(nameof(EnableMountRegen)); OnPropertyChanged(nameof(GodModeMount)); } }
-        }
-
-        // --- Regeneration ---
-        private bool _enablePlayerRegen = false;
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyBool("{=JR_EnablePlayerRegen}Enable Player Regen", Order = 20, RequireRestart = false, HintText = "{=JR_EnablePlayerRegen_Hint}Enable health regeneration for player.")]
-        public bool EnablePlayerRegen
-        {
-            get => _enablePlayerRegen;
-            set { if (_enablePlayerRegen != value) { _enablePlayerRegen = value; if (value) _godModePlayer = false; OnPropertyChanged(nameof(GodModePlayer)); OnPropertyChanged(nameof(EnablePlayerRegen)); } }
-        }
-
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyFloatingInteger("{=JR_PlayerDelay}Player Delay (seconds)", 0f, 60f, Order = 21, RequireRestart = false, HintText = "{=JR_PlayerDelay_Hint}Seconds after last damage before regen starts.")]
-        public float PlayerDelay { get; set; } = 10f;
-
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyFloatingInteger("{=JR_PlayerRate}Player Rate (HP/sec)", 0f, 100f, Order = 22, RequireRestart = false, HintText = "{=JR_PlayerRate_Hint}Health restored per second.")]
-        public float PlayerRate { get; set; } = 2f;
-
-        private bool _enableMountRegen = false;
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyBool("{=JR_EnableMountRegen}Enable Mount Regen", Order = 30, RequireRestart = false, HintText = "{=JR_EnableMountRegen_Hint}Enable health regeneration for player's mount.")]
-        public bool EnableMountRegen
-        {
-            get => _enableMountRegen;
-            set { if (_enableMountRegen != value) { _enableMountRegen = value; if (value) _godModeMount = false; OnPropertyChanged(nameof(GodModeMount)); OnPropertyChanged(nameof(EnableMountRegen)); } }
-        }
-
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyFloatingInteger("{=JR_MountDelay}Mount Delay (seconds)", 0f, 60f, Order = 31, RequireRestart = false, HintText = "{=JR_MountDelay_Hint}Seconds after last damage before regen starts.")]
-        public float MountDelay { get; set; } = 10f;
-
-        [SettingPropertyGroup("{=JR_GroupRegen}Regeneration")]
-        [SettingPropertyFloatingInteger("{=JR_MountRate}Mount Rate (HP/sec)", 0f, 100f, Order = 32, RequireRestart = false, HintText = "{=JR_MountRate_Hint}Health restored per second.")]
-        public float MountRate { get; set; } = 2f;
-
-        // --- Age (упрощён) ---
-        private bool _disableAging = false;
-        [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyBool("{=JR_DisableAging}Disable aging (Player only)", Order = 40, RequireRestart = false, HintText = "{=JR_DisableAging_Hint}If enabled, the player's hero will not age. Current age will be locked.")]
-        public bool DisableAging
-        {
-            get => _disableAging;
-            set { if (_disableAging != value) { _disableAging = value; if (value && MySubModule.Current != null) { MySubModule.Current.LockCurrentPlayerAge(); } OnPropertyChanged(nameof(DisableAging)); } }
-        }
-
-        private float _playerAge = 25f;
-        [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyFloatingInteger("{=JR_PlayerAge}Player Age", 0f, 100f, Order = 41, RequireRestart = false, HintText = "{=JR_PlayerAge_Hint}Set the exact age of the player hero (0-100).")]
-        public float PlayerAge
-        {
-            get => _playerAge;
-            set { if (Math.Abs(_playerAge - value) > 0.01f) { _playerAge = value; OnPropertyChanged(nameof(PlayerAge)); } }
-        }
-
-        private bool _applyAgeButton = false;
-        [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyButton("{=JR_ApplyAgeButton}Apply Age Now", Order = 42, RequireRestart = false, HintText = "{=JR_ApplyAgeButton_Hint}Instantly sets the player's age to the value above (even if aging is not disabled).")]
-        public bool ApplyAgeButton
-        {
-            get => _applyAgeButton;
-            set
-            {
-                if (value)
-                {
-                    try
-                    {
-                        // FIX: Добавлена проверка состояния игры перед применением возраста
-                        if (Campaign.Current != null && Hero.MainHero != null && MySubModule.Current != null)
-                            MySubModule.Current.ApplyPlayerAge();
-                    }
-                    catch (Exception ex)
-                    {
-                        try
-                        {
-                            string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Mount and Blade II Bannerlord", "Configs", "JustRegeneration", "mcm_errors.log");
-                            File.AppendAllText(logPath, $"{DateTime.Now}: ApplyAgeButton error: {ex.Message}\n{ex.StackTrace}\n");
-                        }
-                        catch { }
-                    }
-                    _applyAgeButton = false;
-                    OnPropertyChanged(nameof(ApplyAgeButton));
-                }
-            }
-        }
-
-        // --- Rejuvenation (Player) ---
-        private bool _enablePlayerRejuvenation = false;
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyBool("{=JR_EnablePlayerRejuvenation}Enable", Order = 50, RequireRestart = false, HintText = "{=JR_EnablePlayerRejuvenation_Hint}Enable age reduction for the player hero.")]
-        public bool EnablePlayerRejuvenation
-        {
-            get => _enablePlayerRejuvenation;
-            set { if (_enablePlayerRejuvenation != value) { _enablePlayerRejuvenation = value; OnPropertyChanged(nameof(EnablePlayerRejuvenation)); } }
-        }
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyInteger("{=JR_PlayerMinimumAge}Minimum age", 1, 100, Order = 51, RequireRestart = false, HintText = "{=JR_PlayerMinimumAge_Hint}Player cannot be younger than this age.")]
-        public int PlayerMinimumAge { get; set; } = 18;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyInteger("{=JR_PlayerKillsPerRejuvenation}Kills needed per rejuvenation", 1, 1000000, Order = 52, RequireRestart = false, HintText = "{=JR_PlayerKillsPerRejuvenation_Hint}Number of kills required to trigger rejuvenation.")]
-        public int PlayerKillsPerRejuvenation { get; set; } = 365;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyInteger("{=JR_PlayerDaysPerRejuvenation}Days per rejuvenation", 1, 365, Order = 53, RequireRestart = false, HintText = "{=JR_PlayerDaysPerRejuvenation_Hint}How many days to rejuvenate when threshold is met.")]
-        public int PlayerDaysPerRejuvenation { get; set; } = 365;
-
-        private string _playerDisplayAccumulatedKills = "0";
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyText("{=JR_PlayerDisplayKills}Accumulated kills (player)", Order = 54, RequireRestart = false, HintText = "{=JR_PlayerDisplayKills_Hint}Current number of kills accumulated for the player.")]
-        public string PlayerDisplayAccumulatedKills
-        {
-            get => _playerDisplayAccumulatedKills;
-            set { if (_playerDisplayAccumulatedKills != value) { _playerDisplayAccumulatedKills = value; OnPropertyChanged(nameof(PlayerDisplayAccumulatedKills)); } }
-        }
-
-        private bool _resetKills = false;
-        [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
-        [SettingPropertyButton("{=JR_ResetKillsButton}Reset kill counter (player only)", Order = 55, RequireRestart = false, HintText = "{=JR_ResetKillsButton_Hint}Reset accumulated kills for the player to 0.")]
-        public bool ResetKillsButton
-        {
-            get => _resetKills;
-            set
-            {
-                // FIX: Добавлена обработка исключений и проверка состояния игры
-                if (value)
-                {
-                    try
-                    {
-                        if (Campaign.Current != null && Hero.MainHero != null && MySubModule.Current != null)
-                        {
-                            MySubModule.Current.ResetAccumulatedKills();
-                        }
-                        // Если кампания не загружена, просто игнорируем нажатие (ничего не делаем)
-                    }
-                    catch (Exception ex)
-                    {
-                        try
-                        {
-                            string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Mount and Blade II Bannerlord", "Configs", "JustRegeneration", "mcm_errors.log");
-                            File.AppendAllText(logPath, $"{DateTime.Now}: ResetKillsButton error: {ex.Message}\n{ex.StackTrace}\n");
-                        }
-                        catch { }
-                    }
-                    _resetKills = false;
-                    OnPropertyChanged(nameof(ResetKillsButton));
-                }
-            }
-        }
-
-        // --- Rejuvenation (Family) ---
-        private bool _enableFamilyRejuvenation = false;
-        [SettingPropertyGroup("{=JR_GroupRejuvenationFamily}Rejuvenation (Family Members)")]
-        [SettingPropertyBool("{=JR_EnableFamilyRejuvenation}Enable", Order = 60, RequireRestart = false, HintText = "{=JR_EnableFamilyRejuvenation_Hint}Enable age reduction for family members.")]
-        public bool EnableFamilyRejuvenation
-        {
-            get => _enableFamilyRejuvenation;
-            set { if (_enableFamilyRejuvenation != value) { _enableFamilyRejuvenation = value; OnPropertyChanged(nameof(EnableFamilyRejuvenation)); } }
-        }
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationFamily}Rejuvenation (Family Members)")]
-        [SettingPropertyInteger("{=JR_FamilyMinimumAge}Minimum age", 1, 100, Order = 61, RequireRestart = false, HintText = "{=JR_FamilyMinimumAge_Hint}Family members cannot be younger than this age.")]
-        public int FamilyMinimumAge { get; set; } = 18;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationFamily}Rejuvenation (Family Members)")]
-        [SettingPropertyInteger("{=JR_FamilyKillsPerRejuvenation}Kills needed per rejuvenation", 1, 1000000, Order = 62, RequireRestart = false, HintText = "{=JR_FamilyKillsPerRejuvenation_Hint}Number of kills required to trigger rejuvenation.")]
-        public int FamilyKillsPerRejuvenation { get; set; } = 365;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationFamily}Rejuvenation (Family Members)")]
-        [SettingPropertyInteger("{=JR_FamilyDaysPerRejuvenation}Days per rejuvenation", 1, 365, Order = 63, RequireRestart = false, HintText = "{=JR_FamilyDaysPerRejuvenation_Hint}How many days to rejuvenate when threshold is met.")]
-        public int FamilyDaysPerRejuvenation { get; set; } = 365;
-
-        // --- Rejuvenation (Companions) ---
-        private bool _enableCompanionRejuvenation = false;
-        [SettingPropertyGroup("{=JR_GroupRejuvenationCompanions}Rejuvenation (Companions)")]
-        [SettingPropertyBool("{=JR_EnableCompanionRejuvenation}Enable", Order = 70, RequireRestart = false, HintText = "{=JR_EnableCompanionRejuvenation_Hint}Enable age reduction for companions.")]
-        public bool EnableCompanionRejuvenation
-        {
-            get => _enableCompanionRejuvenation;
-            set { if (_enableCompanionRejuvenation != value) { _enableCompanionRejuvenation = value; OnPropertyChanged(nameof(EnableCompanionRejuvenation)); } }
-        }
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationCompanions}Rejuvenation (Companions)")]
-        [SettingPropertyInteger("{=JR_CompanionMinimumAge}Minimum age", 1, 100, Order = 71, RequireRestart = false, HintText = "{=JR_CompanionMinimumAge_Hint}Companions cannot be younger than this age.")]
-        public int CompanionMinimumAge { get; set; } = 18;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationCompanions}Rejuvenation (Companions)")]
-        [SettingPropertyInteger("{=JR_CompanionKillsPerRejuvenation}Kills needed per rejuvenation", 1, 1000000, Order = 72, RequireRestart = false, HintText = "{=JR_CompanionKillsPerRejuvenation_Hint}Number of kills required to trigger rejuvenation.")]
-        public int CompanionKillsPerRejuvenation { get; set; } = 365;
-
-        [SettingPropertyGroup("{=JR_GroupRejuvenationCompanions}Rejuvenation (Companions)")]
-        [SettingPropertyInteger("{=JR_CompanionDaysPerRejuvenation}Days per rejuvenation", 1, 365, Order = 73, RequireRestart = false, HintText = "{=JR_CompanionDaysPerRejuvenation_Hint}How many days to rejuvenate when threshold is met.")]
-        public int CompanionDaysPerRejuvenation { get; set; } = 365;
-
-        // --- Словарь убийств ---
-        public Dictionary<string, int> AccumulatedKillsPerHero { get; set; } = new Dictionary<string, int>();
-
-        public int GetKillsForHero(Hero hero)
-        {
-            if (hero == null) return 0;
-            string id = hero.StringId;
-            return AccumulatedKillsPerHero.TryGetValue(id, out int kills) ? kills : 0;
-        }
-
-        public void SetKillsForHero(Hero hero, int kills)
-        {
-            if (hero == null) return;
-            string id = hero.StringId;
-            AccumulatedKillsPerHero[id] = kills;
-            if (hero == Hero.MainHero)
-                UpdatePlayerDisplayKills();
-        }
-
-        public void AddKillsForHero(Hero hero, int killsToAdd)
-        {
-            if (hero == null || killsToAdd <= 0) return;
-            int current = GetKillsForHero(hero);
-            SetKillsForHero(hero, current + killsToAdd);
-        }
-
-        public void UpdatePlayerDisplayKills()
-        {
-            PlayerDisplayAccumulatedKills = (Hero.MainHero != null) ? GetKillsForHero(Hero.MainHero).ToString() : "0";
-        }
-
-        public void SyncAgeFromHero(float currentAge)
-        {
-            if (Math.Abs(_playerAge - currentAge) > 0.01f)
-            {
-                _playerAge = currentAge;
-                OnPropertyChanged(nameof(PlayerAge));
-            }
+            // Обновляем список при смене игрока (например, после смерти/наследования)
+            var settings = JustRegenerationSettings.Instance;
+            settings?.RefreshHeroList();
         }
     }
 
