@@ -155,6 +155,7 @@ namespace JustRegeneration
                         if (selectedItem.Id == "all")
                         {
                             var ids = MySubModule.Current.GetCurrentClanMemberIds();
+                            if (ids == null || ids.Count == 0) return;
                             targets = Campaign.Current.AliveHeroes.Where(h => ids.Contains(h.StringId)).ToList();
                         }
                         else
@@ -224,6 +225,7 @@ namespace JustRegeneration
                         if (selectedItem.Id == "all")
                         {
                             var ids = MySubModule.Current.GetCurrentClanMemberIds();
+                            if (ids == null || ids.Count == 0) return;
                             targets = Campaign.Current.AliveHeroes.Where(h => ids.Contains(h.StringId)).ToList();
                         }
                         else
@@ -406,7 +408,7 @@ namespace JustRegeneration
 
         [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
         [SettingPropertyInteger("{=JR_KillsPerFocusPoint}Kills per focus point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point.")]
-        public int KillsPerFocusPoint { get; set; } = 250;
+        public int KillsPerFocusPoint { get; set; } = 1000;
 
         // =====================================================================
         // РАЗДЕЛ: ОЧКИ ВНИМАНИЯ (Attention Points)
@@ -423,7 +425,7 @@ namespace JustRegeneration
 
         [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
         [SettingPropertyInteger("{=JR_KillsPerAttentionPoint}Kills per attention point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point.")]
-        public int KillsPerAttentionPoint { get; set; } = 1000;
+        public int KillsPerAttentionPoint { get; set; } = 4000;
 
         // =====================================================================
         // МЕТОД ОБНОВЛЕНИЯ ВСЕХ ТРЁХ СПИСКОВ
@@ -438,7 +440,20 @@ namespace JustRegeneration
             try
             {
                 var subModule = MySubModule.Current;
-                if (subModule == null || Campaign.Current == null || Hero.MainHero == null)
+
+                Hero mainHero = null;
+                try
+                {
+                    if (Campaign.Current != null)
+                        mainHero = Hero.MainHero;
+                }
+                catch
+                {
+                    // Hero.MainHero может бросить исключение при создании новой игры.
+                    mainHero = null;
+                }
+
+                if (subModule == null || Campaign.Current == null || mainHero == null)
                 {
                     // Нет кампании – только "All"
                     var defaultList = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
@@ -449,7 +464,7 @@ namespace JustRegeneration
                 }
 
                 var ids = subModule.GetCurrentClanMemberIds();
-                if (ids.Count == 0)
+                if (ids == null || ids.Count == 0)
                 {
                     var defaultList = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
                     SelectedResetHero = defaultList;
@@ -468,7 +483,7 @@ namespace JustRegeneration
                 foreach (var hero in heroes)
                 {
                     string displayName = hero.Name.ToString();
-                    if (hero == Hero.MainHero)
+                    if (hero == mainHero)
                         displayName = $"{displayName} (Player)";
                     options.Add(new HeroDisplayItem(hero.StringId, displayName));
                 }

@@ -103,6 +103,12 @@ namespace JustRegeneration
     [HarmonyPatch(typeof(Hero), "get_Age")]
     public static class Patch_HeroAge
     {
+        // Кэшируем приватное поле _defaultAge, чтобы читать возраст без вызова геттера get_Age
+        // (иначе получаем бесконечную рекурсию и StackOverflow).
+        private static readonly FieldInfo _defaultAgeField =
+            typeof(Hero).GetField("_defaultAge",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
         static bool Prefix(Hero __instance, ref float __result)
         {
             try
@@ -114,18 +120,29 @@ namespace JustRegeneration
                 if (settings == null || !settings.EnableMod)
                     return true;
 
+                if (settings.DisableAgingFlags == null)
+                    return true;
+
                 string heroId = __instance.StringId;
+                if (string.IsNullOrEmpty(heroId))
+                    return true;
+
                 if (settings.DisableAgingFlags.TryGetValue(heroId, out bool disabled) && disabled)
                 {
-                    if (settings.CustomAges.TryGetValue(heroId, out float fixedAge))
+                    if (settings.CustomAges != null &&
+                        settings.CustomAges.TryGetValue(heroId, out float fixedAge))
                     {
                         __result = fixedAge;
                         return false;
                     }
-                    else
+
+                    // Нет сохранённого значения — берём _defaultAge напрямую через рефлексию,
+                    // НЕ вызывая __instance.Age (это привело бы к рекурсии).
+                    if (_defaultAgeField != null)
                     {
-                        float currentAge = __instance.Age;
-                        settings.CustomAges[heroId] = currentAge;
+                        float currentAge = (float)_defaultAgeField.GetValue(__instance);
+                        if (settings.CustomAges != null)
+                            settings.CustomAges[heroId] = currentAge;
                         __result = currentAge;
                         return false;
                     }
@@ -198,32 +215,33 @@ namespace JustRegeneration
                     return;
 
                 _isGameFullyLoaded = true;
-                LoadData();
-                LoadAgeData();
-                LoadPointsData();
-                CleanupSaveFile();
-                CleanupAgeData();
-                CleanupPointsData();
+
+                try { LoadData(); } catch (Exception ex) { LogError("LoadData", ex); }
+                try { LoadAgeData(); } catch (Exception ex) { LogError("LoadAgeData", ex); }
+                try { LoadPointsData(); } catch (Exception ex) { LogError("LoadPointsData", ex); }
+                try { CleanupSaveFile(); } catch (Exception ex) { LogError("CleanupSaveFile", ex); }
+                try { CleanupAgeData(); } catch (Exception ex) { LogError("CleanupAgeData", ex); }
+                try { CleanupPointsData(); } catch (Exception ex) { LogError("CleanupPointsData", ex); }
 
                 var settings = JustRegenerationSettings.Instance;
-                settings?.RefreshHeroList();
+                try { settings?.RefreshHeroList(); } catch (Exception ex) { LogError("RefreshHeroList", ex); }
 
                 CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, (CampaignGameStarter starter) =>
                 {
                     _isGameFullyLoaded = true;
                     SyncAgeOnLoad();
                     settings?.UpdatePlayerDisplayKills();
-                    CleanupSaveFile();
-                    CleanupAgeData();
-                    CleanupPointsData();
-                    settings?.RefreshHeroList();
+                    try { CleanupSaveFile(); } catch (Exception ex) { LogError("CleanupSaveFile (loaded)", ex); }
+                    try { CleanupAgeData(); } catch (Exception ex) { LogError("CleanupAgeData (loaded)", ex); }
+                    try { CleanupPointsData(); } catch (Exception ex) { LogError("CleanupPointsData (loaded)", ex); }
+                    try { settings?.RefreshHeroList(); } catch (Exception ex) { LogError("RefreshHeroList (loaded)", ex); }
                 });
 
                 CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, () =>
                 {
                     try
                     {
-                        if (settings != null && settings.EnableMod && _isGameFullyLoaded && Hero.MainHero != null)
+                        if (settings != null && settings.EnableMod && _isGameFullyLoaded)
                         {
                             // nothing to do here, aging is handled by patch
                         }
@@ -234,19 +252,31 @@ namespace JustRegeneration
                 // Обновление списка при найме компаньона
                 CampaignEvents.NewCompanionAdded.AddNonSerializedListener(this, (Hero companion) =>
                 {
-                    if (companion != null && companion.Clan == Hero.MainHero?.Clan)
+                    try
                     {
-                        settings?.RefreshHeroList();
+                        Hero mainHero;
+                        try { mainHero = Hero.MainHero; }
+                        catch { return; }
+
+                        if (companion != null && mainHero != null && companion.Clan == mainHero.Clan)
+                            settings?.RefreshHeroList();
                     }
+                    catch (Exception ex) { LogError("NewCompanionAdded", ex); }
                 });
 
                 // Обновление списка при смене клана героя
                 CampaignEvents.OnHeroChangedClanEvent.AddNonSerializedListener(this, (Hero hero, Clan oldClan) =>
                 {
-                    if (hero != null && hero.Clan == Hero.MainHero?.Clan)
+                    try
                     {
-                        settings?.RefreshHeroList();
+                        Hero mainHero;
+                        try { mainHero = Hero.MainHero; }
+                        catch { return; }
+
+                        if (hero != null && mainHero != null && hero.Clan == mainHero.Clan)
+                            settings?.RefreshHeroList();
                     }
+                    catch (Exception ex) { LogError("OnHeroChangedClanEvent", ex); }
                 });
 
                 CampaignEvents.OnBeforePlayerCharacterChangedEvent.AddNonSerializedListener(this, OnBeforePlayerCharacterChanged);
@@ -329,8 +359,14 @@ namespace JustRegeneration
                 if (killerHero == null)
                     return;
 
-                bool isPlayer = killerHero == Hero.MainHero;
-                bool isFamily = !isPlayer && killerHero.Clan != null && killerHero.Clan == Hero.MainHero?.Clan && !killerHero.IsWanderer;
+                Hero mainHero;
+                try { mainHero = Hero.MainHero; }
+                catch { return; }
+                if (mainHero == null)
+                    return;
+
+                bool isPlayer = killerHero == mainHero;
+                bool isFamily = !isPlayer && killerHero.Clan != null && killerHero.Clan == mainHero.Clan && !killerHero.IsWanderer;
                 bool isCompanion = killerHero.IsWanderer;
 
                 if (!isPlayer && !isFamily && !isCompanion)
@@ -361,6 +397,10 @@ namespace JustRegeneration
                 if (settings == null || !settings.EnableMod)
                     return;
 
+                Hero mainHero;
+                try { mainHero = Hero.MainHero; }
+                catch { mainHero = null; }
+
                 foreach (var kvp in _killsInCurrentMission)
                 {
                     Hero hero = kvp.Key;
@@ -374,8 +414,8 @@ namespace JustRegeneration
                     Hero hero = kvp.Key;
                     if (hero == null) continue;
 
-                    bool isPlayer = hero == Hero.MainHero;
-                    bool isFamily = !isPlayer && hero.Clan != null && hero.Clan == Hero.MainHero?.Clan && !hero.IsWanderer;
+                    bool isPlayer = mainHero != null && hero == mainHero;
+                    bool isFamily = !isPlayer && hero.Clan != null && mainHero != null && hero.Clan == mainHero.Clan && !hero.IsWanderer;
                     bool isCompanion = hero.IsWanderer;
 
                     if (!isPlayer && !isFamily && !isCompanion)
@@ -464,16 +504,18 @@ namespace JustRegeneration
                 }
 
                 // ================== НОВАЯ ЛОГИКА: FOCUS POINTS ==================
-                if (settings.EnableFocusPoints && Hero.MainHero != null && _killsInCurrentMission.TryGetValue(Hero.MainHero, out int playerKillsFocus) && playerKillsFocus > 0)
+                if (settings.EnableFocusPoints && mainHero != null
+                    && _killsInCurrentMission.TryGetValue(mainHero, out int playerKillsFocus)
+                    && playerKillsFocus > 0)
                 {
-                    settings.AddKillsForFocus(Hero.MainHero, playerKillsFocus);
-                    int totalFocusKills = settings.GetKillsForFocus(Hero.MainHero);
+                    settings.AddKillsForFocus(mainHero, playerKillsFocus);
+                    int totalFocusKills = settings.GetKillsForFocus(mainHero);
                     int pointsToAward = totalFocusKills / settings.KillsPerFocusPoint;
                     if (pointsToAward > 0)
                     {
-                        Hero.MainHero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
+                        mainHero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
                         int usedKills = pointsToAward * settings.KillsPerFocusPoint;
-                        settings.SetKillsForFocus(Hero.MainHero, totalFocusKills - usedKills);
+                        settings.SetKillsForFocus(mainHero, totalFocusKills - usedKills);
                         SavePointsData();
 
                         try
@@ -488,16 +530,18 @@ namespace JustRegeneration
                 }
 
                 // ================== НОВАЯ ЛОГИКА: ATTENTION POINTS ==================
-                if (settings.EnableAttentionPoints && Hero.MainHero != null && _killsInCurrentMission.TryGetValue(Hero.MainHero, out int playerKillsAttention) && playerKillsAttention > 0)
+                if (settings.EnableAttentionPoints && mainHero != null
+                    && _killsInCurrentMission.TryGetValue(mainHero, out int playerKillsAttention)
+                    && playerKillsAttention > 0)
                 {
-                    settings.AddKillsForAttention(Hero.MainHero, playerKillsAttention);
-                    int totalAttentionKills = settings.GetKillsForAttention(Hero.MainHero);
+                    settings.AddKillsForAttention(mainHero, playerKillsAttention);
+                    int totalAttentionKills = settings.GetKillsForAttention(mainHero);
                     int pointsToAward = totalAttentionKills / settings.KillsPerAttentionPoint;
                     if (pointsToAward > 0)
                     {
-                        Hero.MainHero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
+                        mainHero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
                         int usedKills = pointsToAward * settings.KillsPerAttentionPoint;
-                        settings.SetKillsForAttention(Hero.MainHero, totalAttentionKills - usedKills);
+                        settings.SetKillsForAttention(mainHero, totalAttentionKills - usedKills);
                         SavePointsData();
 
                         try
@@ -542,7 +586,11 @@ namespace JustRegeneration
                     birthDayField.SetValue(hero, newBirth);
                 }
 
-                if (hero == Hero.MainHero)
+                Hero mainHero;
+                try { mainHero = Hero.MainHero; }
+                catch { mainHero = null; }
+
+                if (mainHero != null && hero == mainHero)
                 {
                     _lastAppliedAge = targetAge;
                     var settings = JustRegenerationSettings.Instance;
@@ -569,10 +617,14 @@ namespace JustRegeneration
                 var settings = JustRegenerationSettings.Instance;
                 if (settings == null) return;
 
-                if (Campaign.Current == null || Hero.MainHero == null)
-                    return;
+                if (Campaign.Current == null) return;
 
-                settings.SetKillsForHero(Hero.MainHero, 0);
+                Hero mainHero;
+                try { mainHero = Hero.MainHero; }
+                catch { return; }
+                if (mainHero == null) return;
+
+                settings.SetKillsForHero(mainHero, 0);
                 SaveData();
 
                 TextObject resetMsg = new TextObject("{=JR_ResetKillsDone}Just Regeneration: Kill counter for main hero reset to 0.");
@@ -715,10 +767,27 @@ namespace JustRegeneration
         public List<string> GetCurrentClanMemberIds()
         {
             var result = new List<string>();
-            if (!_isGameFullyLoaded || Campaign.Current == null || Hero.MainHero == null)
+
+            if (!_isGameFullyLoaded || Campaign.Current == null)
                 return result;
 
-            var clan = Hero.MainHero.Clan;
+            Hero mainHero;
+            try
+            {
+                mainHero = Hero.MainHero;
+            }
+            catch
+            {
+                // Hero.MainHero может бросать NullReferenceException в момент,
+                // когда кампания ещё не полностью инициализирована (например,
+                // при старте новой игры / создании персонажа).
+                return result;
+            }
+
+            if (mainHero == null)
+                return result;
+
+            var clan = mainHero.Clan;
             if (clan == null)
                 return result;
 
@@ -738,7 +807,7 @@ namespace JustRegeneration
                 if (settings == null) return;
 
                 var currentIds = GetCurrentClanMemberIds();
-                if (currentIds.Count == 0) return;
+                if (currentIds == null || currentIds.Count == 0) return;
 
                 var toRemove = settings.AccumulatedKillsPerHero.Keys
                     .Where(id => !currentIds.Contains(id))
@@ -761,7 +830,7 @@ namespace JustRegeneration
                 if (settings == null) return;
 
                 var currentIds = GetCurrentClanMemberIds();
-                if (currentIds.Count == 0) return;
+                if (currentIds == null || currentIds.Count == 0) return;
 
                 var toRemoveAge = settings.CustomAges.Keys.Where(id => !currentIds.Contains(id)).ToList();
                 foreach (var id in toRemoveAge)
@@ -785,7 +854,7 @@ namespace JustRegeneration
                 if (settings == null) return;
 
                 var currentIds = GetCurrentClanMemberIds();
-                if (currentIds.Count == 0) return;
+                if (currentIds == null || currentIds.Count == 0) return;
 
                 var toRemoveFocus = settings.AccumulatedKillsForFocus.Keys.Where(id => !currentIds.Contains(id)).ToList();
                 foreach (var id in toRemoveFocus)
@@ -841,6 +910,8 @@ namespace JustRegeneration
                 var settings = JustRegenerationSettings.Instance;
                 if (settings == null) return;
                 var currentIds = GetCurrentClanMemberIds();
+                if (currentIds == null || currentIds.Count == 0) return;
+
                 foreach (var id in currentIds)
                     settings.AccumulatedKillsPerHero[id] = 0;
                 SaveData();
@@ -929,8 +1000,12 @@ namespace JustRegeneration
 
                 if (!lines[0].Contains('|'))
                 {
-                    if (int.TryParse(lines[0], out int oldKills) && Hero.MainHero != null)
-                        settings.SetKillsForHero(Hero.MainHero, oldKills);
+                    Hero mainHero;
+                    try { mainHero = Hero.MainHero; }
+                    catch { mainHero = null; }
+
+                    if (int.TryParse(lines[0], out int oldKills) && mainHero != null)
+                        settings.SetKillsForHero(mainHero, oldKills);
                     return;
                 }
 
@@ -1052,7 +1127,7 @@ namespace JustRegeneration
         private void OnPlayerCharacterChanged(Hero oldPlayer, Hero newPlayer, MobileParty newMainParty, bool isMainPartyChanged)
         {
             var settings = JustRegenerationSettings.Instance;
-            settings?.RefreshHeroList();
+            try { settings?.RefreshHeroList(); } catch (Exception ex) { LogError("OnPlayerCharacterChanged", ex); }
         }
     }
 
