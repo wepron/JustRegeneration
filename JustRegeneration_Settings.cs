@@ -392,6 +392,40 @@ namespace JustRegeneration
         }
 
         // =====================================================================
+        // РАЗДЕЛ: ОЧКИ ФОКУСА (Focus Points)
+        // =====================================================================
+
+        private bool _enableFocusPoints = false;
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points", GroupOrder = 110)]
+        [SettingPropertyBool("{=JR_EnableFocusPoints}Enable", Order = 0, RequireRestart = false, HintText = "{=JR_EnableFocusPoints_Hint}Enable gaining focus points from kills.")]
+        public bool EnableFocusPoints
+        {
+            get => _enableFocusPoints;
+            set { if (_enableFocusPoints != value) { _enableFocusPoints = value; OnPropertyChanged(nameof(EnableFocusPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
+        [SettingPropertyInteger("{=JR_KillsPerFocusPoint}Kills per focus point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point.")]
+        public int KillsPerFocusPoint { get; set; } = 250;
+
+        // =====================================================================
+        // РАЗДЕЛ: ОЧКИ ВНИМАНИЯ (Attention Points)
+        // =====================================================================
+
+        private bool _enableAttentionPoints = false;
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points", GroupOrder = 120)]
+        [SettingPropertyBool("{=JR_EnableAttentionPoints}Enable", Order = 0, RequireRestart = false, HintText = "{=JR_EnableAttentionPoints_Hint}Enable gaining attention points from kills.")]
+        public bool EnableAttentionPoints
+        {
+            get => _enableAttentionPoints;
+            set { if (_enableAttentionPoints != value) { _enableAttentionPoints = value; OnPropertyChanged(nameof(EnableAttentionPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
+        [SettingPropertyInteger("{=JR_KillsPerAttentionPoint}Kills per attention point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point.")]
+        public int KillsPerAttentionPoint { get; set; } = 1000;
+
+        // =====================================================================
         // МЕТОД ОБНОВЛЕНИЯ ВСЕХ ТРЁХ СПИСКОВ
         // =====================================================================
 
@@ -488,6 +522,10 @@ namespace JustRegeneration
 
         public Dictionary<string, int> AccumulatedKillsPerHero { get; set; } = new Dictionary<string, int>();
 
+        // Новые словари для фокуса и внимания
+        public Dictionary<string, int> AccumulatedKillsForFocus { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> AccumulatedKillsForAttention { get; set; } = new Dictionary<string, int>();
+
         public int GetKillsForHero(Hero hero)
         {
             if (hero == null) return 0;
@@ -507,6 +545,44 @@ namespace JustRegeneration
             if (hero == null || killsToAdd <= 0) return;
             int current = GetKillsForHero(hero);
             SetKillsForHero(hero, current + killsToAdd);
+        }
+
+        public int GetKillsForFocus(Hero hero)
+        {
+            if (hero == null) return 0;
+            return AccumulatedKillsForFocus.TryGetValue(hero.StringId, out int kills) ? kills : 0;
+        }
+
+        public void SetKillsForFocus(Hero hero, int kills)
+        {
+            if (hero == null) return;
+            AccumulatedKillsForFocus[hero.StringId] = kills;
+        }
+
+        public void AddKillsForFocus(Hero hero, int killsToAdd)
+        {
+            if (hero == null || killsToAdd <= 0) return;
+            int current = GetKillsForFocus(hero);
+            SetKillsForFocus(hero, current + killsToAdd);
+        }
+
+        public int GetKillsForAttention(Hero hero)
+        {
+            if (hero == null) return 0;
+            return AccumulatedKillsForAttention.TryGetValue(hero.StringId, out int kills) ? kills : 0;
+        }
+
+        public void SetKillsForAttention(Hero hero, int kills)
+        {
+            if (hero == null) return;
+            AccumulatedKillsForAttention[hero.StringId] = kills;
+        }
+
+        public void AddKillsForAttention(Hero hero, int killsToAdd)
+        {
+            if (hero == null || killsToAdd <= 0) return;
+            int current = GetKillsForAttention(hero);
+            SetKillsForAttention(hero, current + killsToAdd);
         }
 
         public void UpdatePlayerDisplayKills()

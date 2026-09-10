@@ -158,6 +158,7 @@ namespace JustRegeneration
 
         private const string SaveFileName = "JustRegenerationData.txt";
         private const string AgeSaveFileName = "JustRegenerationAgeData.txt";
+        private const string PointsSaveFileName = "JustRegenerationPointsData.txt";
 
         private string SaveFilePath
         {
@@ -171,6 +172,7 @@ namespace JustRegeneration
         }
 
         private string AgeSaveFilePath => Path.Combine(Path.GetDirectoryName(SaveFilePath), AgeSaveFileName);
+        private string PointsSaveFilePath => Path.Combine(Path.GetDirectoryName(SaveFilePath), PointsSaveFileName);
         private string ErrorLogPath => Path.Combine(Path.GetDirectoryName(SaveFilePath), "JustRegeneration_errors.log");
 
         protected override void OnSubModuleLoad()
@@ -198,8 +200,10 @@ namespace JustRegeneration
                 _isGameFullyLoaded = true;
                 LoadData();
                 LoadAgeData();
+                LoadPointsData();
                 CleanupSaveFile();
                 CleanupAgeData();
+                CleanupPointsData();
 
                 var settings = JustRegenerationSettings.Instance;
                 settings?.RefreshHeroList();
@@ -211,6 +215,7 @@ namespace JustRegeneration
                     settings?.UpdatePlayerDisplayKills();
                     CleanupSaveFile();
                     CleanupAgeData();
+                    CleanupPointsData();
                     settings?.RefreshHeroList();
                 });
 
@@ -267,6 +272,7 @@ namespace JustRegeneration
         {
             SaveData();
             SaveAgeData();
+            SavePointsData();
             base.OnGameEnd(game);
         }
 
@@ -329,7 +335,7 @@ namespace JustRegeneration
 
                 if (!isPlayer && !isFamily && !isCompanion)
                     return;
-                if (isPlayer && !settings.EnablePlayerRejuvenation)
+                if (isPlayer && !settings.EnablePlayerRejuvenation && !settings.EnableFocusPoints && !settings.EnableAttentionPoints)
                     return;
                 if (isFamily && !settings.EnableFamilyRejuvenation)
                     return;
@@ -454,6 +460,54 @@ namespace JustRegeneration
                             }
                             catch { }
                         }
+                    }
+                }
+
+                // ================== НОВАЯ ЛОГИКА: FOCUS POINTS ==================
+                if (settings.EnableFocusPoints && Hero.MainHero != null && _killsInCurrentMission.TryGetValue(Hero.MainHero, out int playerKillsFocus) && playerKillsFocus > 0)
+                {
+                    settings.AddKillsForFocus(Hero.MainHero, playerKillsFocus);
+                    int totalFocusKills = settings.GetKillsForFocus(Hero.MainHero);
+                    int pointsToAward = totalFocusKills / settings.KillsPerFocusPoint;
+                    if (pointsToAward > 0)
+                    {
+                        Hero.MainHero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
+                        int usedKills = pointsToAward * settings.KillsPerFocusPoint;
+                        settings.SetKillsForFocus(Hero.MainHero, totalFocusKills - usedKills);
+                        SavePointsData();
+
+                        try
+                        {
+                            TextObject msg = new TextObject("{=JR_FocusPointGained}Just Regeneration: Gained {POINTS} focus point(s). Remaining kills: {REMAIN}.");
+                            msg.SetTextVariable("POINTS", pointsToAward);
+                            msg.SetTextVariable("REMAIN", totalFocusKills - usedKills);
+                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                        }
+                        catch { }
+                    }
+                }
+
+                // ================== НОВАЯ ЛОГИКА: ATTENTION POINTS ==================
+                if (settings.EnableAttentionPoints && Hero.MainHero != null && _killsInCurrentMission.TryGetValue(Hero.MainHero, out int playerKillsAttention) && playerKillsAttention > 0)
+                {
+                    settings.AddKillsForAttention(Hero.MainHero, playerKillsAttention);
+                    int totalAttentionKills = settings.GetKillsForAttention(Hero.MainHero);
+                    int pointsToAward = totalAttentionKills / settings.KillsPerAttentionPoint;
+                    if (pointsToAward > 0)
+                    {
+                        Hero.MainHero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
+                        int usedKills = pointsToAward * settings.KillsPerAttentionPoint;
+                        settings.SetKillsForAttention(Hero.MainHero, totalAttentionKills - usedKills);
+                        SavePointsData();
+
+                        try
+                        {
+                            TextObject msg = new TextObject("{=JR_AttentionPointGained}Just Regeneration: Gained {POINTS} attention point(s). Remaining kills: {REMAIN}.");
+                            msg.SetTextVariable("POINTS", pointsToAward);
+                            msg.SetTextVariable("REMAIN", totalAttentionKills - usedKills);
+                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                        }
+                        catch { }
                     }
                 }
 
@@ -723,6 +777,30 @@ namespace JustRegeneration
             catch (Exception ex) { LogError("CleanupAgeData", ex); }
         }
 
+        public void CleanupPointsData()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                var currentIds = GetCurrentClanMemberIds();
+                if (currentIds.Count == 0) return;
+
+                var toRemoveFocus = settings.AccumulatedKillsForFocus.Keys.Where(id => !currentIds.Contains(id)).ToList();
+                foreach (var id in toRemoveFocus)
+                    settings.AccumulatedKillsForFocus.Remove(id);
+
+                var toRemoveAttention = settings.AccumulatedKillsForAttention.Keys.Where(id => !currentIds.Contains(id)).ToList();
+                foreach (var id in toRemoveAttention)
+                    settings.AccumulatedKillsForAttention.Remove(id);
+
+                if (toRemoveFocus.Count > 0 || toRemoveAttention.Count > 0)
+                    SavePointsData();
+            }
+            catch (Exception ex) { LogError("CleanupPointsData", ex); }
+        }
+
         public int GetKillsForHeroId(string heroId)
         {
             try
@@ -911,6 +989,52 @@ namespace JustRegeneration
                 File.WriteAllLines(AgeSaveFilePath, lines);
             }
             catch (Exception ex) { LogError("SaveAgeData", ex); }
+        }
+
+        private void SavePointsData()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                var lines = new List<string>();
+                foreach (var kvp in settings.AccumulatedKillsForFocus)
+                    lines.Add($"Focus|{kvp.Key}|{kvp.Value}");
+                foreach (var kvp in settings.AccumulatedKillsForAttention)
+                    lines.Add($"Attention|{kvp.Key}|{kvp.Value}");
+
+                File.WriteAllLines(PointsSaveFilePath, lines);
+            }
+            catch (Exception ex) { LogError("SavePointsData", ex); }
+        }
+
+        private void LoadPointsData()
+        {
+            try
+            {
+                if (!File.Exists(PointsSaveFilePath)) return;
+                string[] lines = File.ReadAllLines(PointsSaveFilePath);
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string[] parts = line.Split('|');
+                    if (parts.Length != 3) continue;
+
+                    string type = parts[0];
+                    string id = parts[1];
+                    if (!int.TryParse(parts[2], out int kills)) continue;
+
+                    if (type == "Focus")
+                        settings.AccumulatedKillsForFocus[id] = kills;
+                    else if (type == "Attention")
+                        settings.AccumulatedKillsForAttention[id] = kills;
+                }
+            }
+            catch (Exception ex) { LogError("LoadPointsData", ex); }
         }
 
         private void LogError(string context, Exception ex)
