@@ -107,17 +107,28 @@ namespace JustRegeneration
         {
             try
             {
-                if (__instance == null || Hero.MainHero == null || __instance != Hero.MainHero)
+                if (__instance == null)
                     return true;
 
                 var settings = JustRegenerationSettings.Instance;
                 if (settings == null || !settings.EnableMod)
                     return true;
 
-                if (settings.DisableAging)
+                string heroId = __instance.StringId;
+                if (settings.DisableAgingFlags.TryGetValue(heroId, out bool disabled) && disabled)
                 {
-                    __result = settings.PlayerAge;
-                    return false;
+                    if (settings.CustomAges.TryGetValue(heroId, out float fixedAge))
+                    {
+                        __result = fixedAge;
+                        return false;
+                    }
+                    else
+                    {
+                        float currentAge = __instance.Age;
+                        settings.CustomAges[heroId] = currentAge;
+                        __result = currentAge;
+                        return false;
+                    }
                 }
             }
             catch { }
@@ -146,6 +157,7 @@ namespace JustRegeneration
         private bool _isGameFullyLoaded = false;
 
         private const string SaveFileName = "JustRegenerationData.txt";
+        private const string AgeSaveFileName = "JustRegenerationAgeData.txt";
 
         private string SaveFilePath
         {
@@ -158,6 +170,7 @@ namespace JustRegeneration
             }
         }
 
+        private string AgeSaveFilePath => Path.Combine(Path.GetDirectoryName(SaveFilePath), AgeSaveFileName);
         private string ErrorLogPath => Path.Combine(Path.GetDirectoryName(SaveFilePath), "JustRegeneration_errors.log");
 
         protected override void OnSubModuleLoad()
@@ -184,15 +197,20 @@ namespace JustRegeneration
 
                 _isGameFullyLoaded = true;
                 LoadData();
+                LoadAgeData();
                 CleanupSaveFile();
+                CleanupAgeData();
+
+                var settings = JustRegenerationSettings.Instance;
+                settings?.RefreshHeroList();
 
                 CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, (CampaignGameStarter starter) =>
                 {
                     _isGameFullyLoaded = true;
                     SyncAgeOnLoad();
-                    var settings = JustRegenerationSettings.Instance;
                     settings?.UpdatePlayerDisplayKills();
                     CleanupSaveFile();
+                    CleanupAgeData();
                     settings?.RefreshHeroList();
                 });
 
@@ -200,11 +218,30 @@ namespace JustRegeneration
                 {
                     try
                     {
-                        var settings = JustRegenerationSettings.Instance;
-                        if (settings != null && settings.EnableMod && settings.DisableAging && _isGameFullyLoaded && Hero.MainHero != null)
-                            ApplyAgeToHero(Hero.MainHero, settings.PlayerAge);
+                        if (settings != null && settings.EnableMod && _isGameFullyLoaded && Hero.MainHero != null)
+                        {
+                            // nothing to do here, aging is handled by patch
+                        }
                     }
                     catch (Exception ex) { LogError("DailyTickEvent", ex); }
+                });
+
+                // Обновление списка при найме компаньона
+                CampaignEvents.NewCompanionAdded.AddNonSerializedListener(this, (Hero companion) =>
+                {
+                    if (companion != null && companion.Clan == Hero.MainHero?.Clan)
+                    {
+                        settings?.RefreshHeroList();
+                    }
+                });
+
+                // Обновление списка при смене клана героя
+                CampaignEvents.OnHeroChangedClanEvent.AddNonSerializedListener(this, (Hero hero, Clan oldClan) =>
+                {
+                    if (hero != null && hero.Clan == Hero.MainHero?.Clan)
+                    {
+                        settings?.RefreshHeroList();
+                    }
                 });
 
                 CampaignEvents.OnBeforePlayerCharacterChangedEvent.AddNonSerializedListener(this, OnBeforePlayerCharacterChanged);
@@ -229,6 +266,7 @@ namespace JustRegeneration
         public override void OnGameEnd(Game game)
         {
             SaveData();
+            SaveAgeData();
             base.OnGameEnd(game);
         }
 
@@ -462,32 +500,12 @@ namespace JustRegeneration
 
         public void ApplyPlayerAge()
         {
-            var settings = JustRegenerationSettings.Instance;
-            if (settings != null && Hero.MainHero != null)
-                ApplyAgeToHero(Hero.MainHero, settings.PlayerAge);
+            // устаревший метод, оставлен для совместимости
         }
 
         public void LockCurrentPlayerAge()
         {
-            try
-            {
-                if (!_isGameFullyLoaded || Hero.MainHero == null) return;
-                float currentAge = Hero.MainHero.Age;
-                var settings = JustRegenerationSettings.Instance;
-                settings?.SyncAgeFromHero(currentAge);
-            }
-            catch (Exception ex)
-            {
-                LogError("LockCurrentPlayerAge", ex);
-                try
-                {
-                    TextObject errorMsg = new TextObject("{=JR_ErrorLockingAge}Just Regeneration: Error locking age: {MESSAGE}");
-                    errorMsg.SetTextVariable("MESSAGE", ex.Message);
-                    if (Campaign.Current != null)
-                        InformationManager.DisplayMessage(new InformationMessage(errorMsg.ToString()));
-                }
-                catch { }
-            }
+            // устаревший метод, оставлен для совместимости
         }
 
         public void ResetAccumulatedKills()
@@ -525,20 +543,7 @@ namespace JustRegeneration
 
         private void SyncAgeOnLoad()
         {
-            try
-            {
-                if (!_isGameFullyLoaded || Hero.MainHero == null) return;
-                var settings = JustRegenerationSettings.Instance;
-                if (settings == null) return;
-
-                if (settings.DisableAging)
-                {
-                    float currentAge = Hero.MainHero.Age;
-                    settings.SyncAgeFromHero(currentAge);
-                    ApplyAgeToHero(Hero.MainHero, settings.PlayerAge);
-                }
-            }
-            catch (Exception ex) { LogError("SyncAgeOnLoad", ex); }
+            // устаревший метод, оставлен для совместимости
         }
 
         public void RegisterDamage(Agent victim, float damage)
@@ -650,24 +655,18 @@ namespace JustRegeneration
         }
 
         // =====================================================================
-        // МЕТОДЫ ДЛЯ РАБОТЫ СО СПИСКОМ КЛАНА И СБРОСОМ СЧЁТЧИКОВ
+        // МЕТОДЫ ДЛЯ РАБОТЫ СО СПИСКОМ КЛАНА, УБИЙСТВАМИ, ВОЗРАСТОМ И СТАРЕНИЕМ
         // =====================================================================
 
         public List<string> GetCurrentClanMemberIds()
         {
             var result = new List<string>();
             if (!_isGameFullyLoaded || Campaign.Current == null || Hero.MainHero == null)
-            {
-                LogError("GetCurrentClanMemberIds", new Exception($"Game not fully loaded: _isGameFullyLoaded={_isGameFullyLoaded}, Campaign.Current={Campaign.Current != null}, Hero.MainHero={Hero.MainHero != null}"));
                 return result;
-            }
 
             var clan = Hero.MainHero.Clan;
             if (clan == null)
-            {
-                LogError("GetCurrentClanMemberIds", new Exception("Clan is null for MainHero"));
                 return result;
-            }
 
             foreach (var hero in clan.Heroes)
             {
@@ -695,11 +694,33 @@ namespace JustRegeneration
                     settings.AccumulatedKillsPerHero.Remove(id);
 
                 if (toRemove.Count > 0)
-                {
                     SaveData();
-                }
             }
             catch (Exception ex) { LogError("CleanupSaveFile", ex); }
+        }
+
+        public void CleanupAgeData()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                var currentIds = GetCurrentClanMemberIds();
+                if (currentIds.Count == 0) return;
+
+                var toRemoveAge = settings.CustomAges.Keys.Where(id => !currentIds.Contains(id)).ToList();
+                foreach (var id in toRemoveAge)
+                    settings.CustomAges.Remove(id);
+
+                var toRemoveAging = settings.DisableAgingFlags.Keys.Where(id => !currentIds.Contains(id)).ToList();
+                foreach (var id in toRemoveAging)
+                    settings.DisableAgingFlags.Remove(id);
+
+                if (toRemoveAge.Count > 0 || toRemoveAging.Count > 0)
+                    SaveAgeData();
+            }
+            catch (Exception ex) { LogError("CleanupAgeData", ex); }
         }
 
         public int GetKillsForHeroId(string heroId)
@@ -743,9 +764,7 @@ namespace JustRegeneration
                 if (settings == null) return;
                 var currentIds = GetCurrentClanMemberIds();
                 foreach (var id in currentIds)
-                {
                     settings.AccumulatedKillsPerHero[id] = 0;
-                }
                 SaveData();
                 if (Campaign.Current != null)
                 {
@@ -754,6 +773,54 @@ namespace JustRegeneration
                 }
             }
             catch (Exception ex) { LogError("ResetAllKills", ex); }
+        }
+
+        public void ApplyAgeToHeroes(List<Hero> heroes, float age)
+        {
+            try
+            {
+                if (heroes == null || heroes.Count == 0) return;
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                foreach (var hero in heroes)
+                {
+                    if (hero == null) continue;
+                    ApplyAgeToHero(hero, age);
+                    settings.CustomAges[hero.StringId] = age;
+                }
+                SaveAgeData();
+            }
+            catch (Exception ex) { LogError("ApplyAgeToHeroes", ex); }
+        }
+
+        public void SetAgingForHeroes(List<Hero> heroes, bool disable)
+        {
+            try
+            {
+                if (heroes == null || heroes.Count == 0) return;
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                foreach (var hero in heroes)
+                {
+                    if (hero == null) continue;
+                    string id = hero.StringId;
+                    if (disable)
+                    {
+                        float currentAge = hero.Age;
+                        settings.CustomAges[id] = currentAge;
+                        settings.DisableAgingFlags[id] = true;
+                    }
+                    else
+                    {
+                        settings.CustomAges.Remove(id);
+                        settings.DisableAgingFlags.Remove(id);
+                    }
+                }
+                SaveAgeData();
+            }
+            catch (Exception ex) { LogError("SetAgingForHeroes", ex); }
         }
 
         // =====================================================================
@@ -800,6 +867,52 @@ namespace JustRegeneration
             catch (Exception ex) { LogError("LoadData", ex); }
         }
 
+        private void LoadAgeData()
+        {
+            try
+            {
+                if (!File.Exists(AgeSaveFilePath)) return;
+                string[] lines = File.ReadAllLines(AgeSaveFilePath);
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string[] parts = line.Split('|');
+                    if (parts.Length != 3) continue;
+
+                    string id = parts[0];
+                    string type = parts[1];
+                    string value = parts[2];
+
+                    if (type == "Age" && float.TryParse(value, out float age))
+                        settings.CustomAges[id] = age;
+                    else if (type == "Aging" && bool.TryParse(value, out bool disabled))
+                        settings.DisableAgingFlags[id] = disabled;
+                }
+            }
+            catch (Exception ex) { LogError("LoadAgeData", ex); }
+        }
+
+        private void SaveAgeData()
+        {
+            try
+            {
+                var settings = JustRegenerationSettings.Instance;
+                if (settings == null) return;
+
+                var lines = new List<string>();
+                foreach (var kvp in settings.CustomAges)
+                    lines.Add($"{kvp.Key}|Age|{kvp.Value}");
+                foreach (var kvp in settings.DisableAgingFlags)
+                    lines.Add($"{kvp.Key}|Aging|{kvp.Value}");
+
+                File.WriteAllLines(AgeSaveFilePath, lines);
+            }
+            catch (Exception ex) { LogError("SaveAgeData", ex); }
+        }
+
         private void LogError(string context, Exception ex)
         {
             try
@@ -814,7 +927,6 @@ namespace JustRegeneration
 
         private void OnPlayerCharacterChanged(Hero oldPlayer, Hero newPlayer, MobileParty newMainParty, bool isMainPartyChanged)
         {
-            // Обновляем список при смене игрока (например, после смерти/наследования)
             var settings = JustRegenerationSettings.Instance;
             settings?.RefreshHeroList();
         }

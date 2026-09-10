@@ -26,7 +26,7 @@ namespace JustRegeneration
     }
 
     // =========================================================================
-    // 3. НАСТРОЙКИ (MCM) – с использованием MCM.Common.Dropdown и HeroDisplayItem
+    // 3. НАСТРОЙКИ (MCM)
     // =========================================================================
 
     public class JustRegenerationSettings : AttributeGlobalSettings<JustRegenerationSettings>
@@ -99,28 +99,45 @@ namespace JustRegeneration
         [SettingPropertyFloatingInteger("{=JR_MountRate}Mount Rate (HP/sec)", 0f, 100f, Order = 32, RequireRestart = false, HintText = "{=JR_MountRate_Hint}Health restored per second.")]
         public float MountRate { get; set; } = 2f;
 
-        // --- Age (упрощён) ---
-        private bool _disableAging = false;
-        [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyBool("{=JR_DisableAging}Disable aging (Player only)", Order = 40, RequireRestart = false, HintText = "{=JR_DisableAging_Hint}If enabled, the player's hero will not age. Current age will be locked.")]
-        public bool DisableAging
+        // =====================================================================
+        // РАЗДЕЛ: ВОЗРАСТ (Age)
+        // =====================================================================
+
+        private Dropdown<HeroDisplayItem> _selectedAgeHero = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
+        [SettingPropertyGroup("{=JR_GroupAge}Age", GroupOrder = 40)]
+        [SettingPropertyDropdown("{=JR_SelectAgeHero}Select hero", Order = 100, RequireRestart = false, HintText = "{=JR_SelectAgeHero_Hint}Select a clan member to change age.")]
+        public Dropdown<HeroDisplayItem> SelectedAgeHero
         {
-            get => _disableAging;
-            set { if (_disableAging != value) { _disableAging = value; if (value && MySubModule.Current != null) { MySubModule.Current.LockCurrentPlayerAge(); } OnPropertyChanged(nameof(DisableAging)); } }
+            get => _selectedAgeHero;
+            set
+            {
+                if (_selectedAgeHero != value)
+                {
+                    _selectedAgeHero = value;
+                    OnPropertyChanged(nameof(SelectedAgeHero));
+                }
+            }
         }
 
-        private float _playerAge = 25f;
+        private float _ageValue = 25f;
         [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyFloatingInteger("{=JR_PlayerAge}Player Age", 0f, 100f, Order = 41, RequireRestart = false, HintText = "{=JR_PlayerAge_Hint}Set the exact age of the player hero (0-100).")]
-        public float PlayerAge
+        [SettingPropertyFloatingInteger("{=JR_AgeSlider}Age", 0f, 100f, Order = 101, RequireRestart = false, HintText = "{=JR_AgeSlider_Hint}Set the age value (0-100).")]
+        public float AgeValue
         {
-            get => _playerAge;
-            set { if (Math.Abs(_playerAge - value) > 0.01f) { _playerAge = value; OnPropertyChanged(nameof(PlayerAge)); } }
+            get => _ageValue;
+            set
+            {
+                if (Math.Abs(_ageValue - value) > 0.01f)
+                {
+                    _ageValue = value;
+                    OnPropertyChanged(nameof(AgeValue));
+                }
+            }
         }
 
         private bool _applyAgeButton = false;
         [SettingPropertyGroup("{=JR_GroupAge}Age")]
-        [SettingPropertyButton("{=JR_ApplyAgeButton}Apply Age Now", Order = 42, RequireRestart = false, HintText = "{=JR_ApplyAgeButton_Hint}Instantly sets the player's age to the value above (even if aging is not disabled).")]
+        [SettingPropertyButton("{=JR_ApplyAgeButton}Apply Age", Order = 102, RequireRestart = false, HintText = "{=JR_ApplyAgeButton_Hint}Apply the set age to selected hero(s).")]
         public bool ApplyAgeButton
         {
             get => _applyAgeButton;
@@ -130,8 +147,24 @@ namespace JustRegeneration
                 {
                     try
                     {
-                        if (Campaign.Current != null && Hero.MainHero != null && MySubModule.Current != null)
-                            MySubModule.Current.ApplyPlayerAge();
+                        if (MySubModule.Current == null) return;
+                        var selectedItem = SelectedAgeHero.SelectedValue;
+                        if (selectedItem == null) return;
+
+                        List<Hero> targets = new List<Hero>();
+                        if (selectedItem.Id == "all")
+                        {
+                            var ids = MySubModule.Current.GetCurrentClanMemberIds();
+                            targets = Campaign.Current.AliveHeroes.Where(h => ids.Contains(h.StringId)).ToList();
+                        }
+                        else
+                        {
+                            var hero = Hero.Find(selectedItem.Id);
+                            if (hero != null) targets.Add(hero);
+                        }
+
+                        if (targets.Count > 0)
+                            MySubModule.Current.ApplyAgeToHeroes(targets, AgeValue);
                     }
                     catch (Exception ex)
                     {
@@ -148,7 +181,77 @@ namespace JustRegeneration
             }
         }
 
-        // --- Rejuvenation (Player) ---
+        // =====================================================================
+        // РАЗДЕЛ: СТАРЕНИЕ (Aging)
+        // =====================================================================
+
+        private Dropdown<HeroDisplayItem> _selectedAgingHero = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
+        [SettingPropertyGroup("{=JR_GroupAging}Aging", GroupOrder = 50)]
+        [SettingPropertyDropdown("{=JR_SelectAgingHero}Select hero", Order = 200, RequireRestart = false, HintText = "{=JR_SelectAgingHero_Hint}Select a clan member to manage aging.")]
+        public Dropdown<HeroDisplayItem> SelectedAgingHero
+        {
+            get => _selectedAgingHero;
+            set
+            {
+                if (_selectedAgingHero != value)
+                {
+                    _selectedAgingHero = value;
+                    OnPropertyChanged(nameof(SelectedAgingHero));
+                }
+            }
+        }
+
+        private bool _disableAgingToggle = false;
+        [SettingPropertyGroup("{=JR_GroupAging}Aging")]
+        [SettingPropertyBool("{=JR_DisableAgingToggle}Disable aging", Order = 201, RequireRestart = false, HintText = "{=JR_DisableAgingToggle_Hint}Disable aging for selected hero(s).")]
+        public bool DisableAgingToggle
+        {
+            get => _disableAgingToggle;
+            set
+            {
+                if (_disableAgingToggle != value)
+                {
+                    _disableAgingToggle = value;
+                    OnPropertyChanged(nameof(DisableAgingToggle));
+                    // Применяем немедленно
+                    try
+                    {
+                        if (MySubModule.Current == null) return;
+                        var selectedItem = SelectedAgingHero.SelectedValue;
+                        if (selectedItem == null) return;
+
+                        List<Hero> targets = new List<Hero>();
+                        if (selectedItem.Id == "all")
+                        {
+                            var ids = MySubModule.Current.GetCurrentClanMemberIds();
+                            targets = Campaign.Current.AliveHeroes.Where(h => ids.Contains(h.StringId)).ToList();
+                        }
+                        else
+                        {
+                            var hero = Hero.Find(selectedItem.Id);
+                            if (hero != null) targets.Add(hero);
+                        }
+
+                        if (targets.Count > 0)
+                            MySubModule.Current.SetAgingForHeroes(targets, value);
+                    }
+                    catch (Exception ex)
+                    {
+                        try
+                        {
+                            string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Mount and Blade II Bannerlord", "Configs", "JustRegeneration", "mcm_errors.log");
+                            File.AppendAllText(logPath, $"{DateTime.Now}: DisableAgingToggle error: {ex.Message}\n{ex.StackTrace}\n");
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // РАЗДЕЛ: ОМОЛОЖЕНИЕ (Rejuvenation) - Player
+        // =====================================================================
+
         private bool _enablePlayerRejuvenation = false;
         [SettingPropertyGroup("{=JR_GroupRejuvenationPlayer}Rejuvenation (Player)")]
         [SettingPropertyBool("{=JR_EnablePlayerRejuvenation}Enable", Order = 50, RequireRestart = false, HintText = "{=JR_EnablePlayerRejuvenation_Hint}Enable age reduction for the player hero.")]
@@ -170,7 +273,10 @@ namespace JustRegeneration
         [SettingPropertyInteger("{=JR_PlayerDaysPerRejuvenation}Days per rejuvenation", 1, 365, Order = 53, RequireRestart = false, HintText = "{=JR_PlayerDaysPerRejuvenation_Hint}How many days to rejuvenate when threshold is met.")]
         public int PlayerDaysPerRejuvenation { get; set; } = 365;
 
-        // --- Rejuvenation (Family) ---
+        // =====================================================================
+        // РАЗДЕЛ: ОМОЛОЖЕНИЕ (Rejuvenation) - Family
+        // =====================================================================
+
         private bool _enableFamilyRejuvenation = false;
         [SettingPropertyGroup("{=JR_GroupRejuvenationFamily}Rejuvenation (Family Members)")]
         [SettingPropertyBool("{=JR_EnableFamilyRejuvenation}Enable", Order = 60, RequireRestart = false, HintText = "{=JR_EnableFamilyRejuvenation_Hint}Enable age reduction for family members.")]
@@ -192,7 +298,10 @@ namespace JustRegeneration
         [SettingPropertyInteger("{=JR_FamilyDaysPerRejuvenation}Days per rejuvenation", 1, 365, Order = 63, RequireRestart = false, HintText = "{=JR_FamilyDaysPerRejuvenation_Hint}How many days to rejuvenate when threshold is met.")]
         public int FamilyDaysPerRejuvenation { get; set; } = 365;
 
-        // --- Rejuvenation (Companions) ---
+        // =====================================================================
+        // РАЗДЕЛ: ОМОЛОЖЕНИЕ (Rejuvenation) - Companions
+        // =====================================================================
+
         private bool _enableCompanionRejuvenation = false;
         [SettingPropertyGroup("{=JR_GroupRejuvenationCompanions}Rejuvenation (Companions)")]
         [SettingPropertyBool("{=JR_EnableCompanionRejuvenation}Enable", Order = 70, RequireRestart = false, HintText = "{=JR_EnableCompanionRejuvenation_Hint}Enable age reduction for companions.")]
@@ -215,7 +324,7 @@ namespace JustRegeneration
         public int CompanionDaysPerRejuvenation { get; set; } = 365;
 
         // =====================================================================
-        // НОВЫЙ РАЗДЕЛ: СБРОС СЧЁТЧИКОВ УБИЙСТВ (с отображением имён)
+        // РАЗДЕЛ: СБРОС СЧЁТЧИКОВ УБИЙСТВ
         // =====================================================================
 
         private Dropdown<HeroDisplayItem> _selectedResetHero = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
@@ -235,7 +344,6 @@ namespace JustRegeneration
             }
         }
 
-        // Отображение количества убийств для выбранного героя
         public string SelectedHeroKillsDisplay
         {
             get
@@ -283,71 +391,78 @@ namespace JustRegeneration
             }
         }
 
+        // =====================================================================
+        // МЕТОД ОБНОВЛЕНИЯ ВСЕХ ТРЁХ СПИСКОВ
+        // =====================================================================
+
         /// <summary>
-        /// Обновляет список героев в выпадающем списке. Вызывается при загрузке кампании.
-        /// В отличие от предыдущей версии, мы не создаём новый Dropdown, а изменяем существующий.
+        /// Обновляет все выпадающие списки (для сброса убийств, возраста и старения).
+        /// Вызывается при загрузке игры, после найма компаньона, смены игрока.
         /// </summary>
         public void RefreshHeroList()
         {
             try
             {
-                string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Mount and Blade II Bannerlord", "Configs", "JustRegeneration", "debug.log");
-                File.AppendAllText(debugPath, $"{DateTime.Now}: RefreshHeroList called\n");
-
                 var subModule = MySubModule.Current;
                 if (subModule == null || Campaign.Current == null || Hero.MainHero == null)
                 {
-                    File.AppendAllText(debugPath, $"{DateTime.Now}: subModule or Campaign or MainHero is null\n");
-                    // Оставляем только "All"
-                    SelectedResetHero.Clear();
-                    SelectedResetHero.Add(new HeroDisplayItem("all", "All"));
-                    SelectedResetHero.SelectedIndex = 0;
-                    OnPropertyChanged(nameof(SelectedResetHero));
-                    OnPropertyChanged(nameof(SelectedHeroKillsDisplay));
+                    // Нет кампании – только "All"
+                    var defaultList = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
+                    SelectedResetHero = defaultList;
+                    SelectedAgeHero = defaultList;
+                    SelectedAgingHero = defaultList;
                     return;
                 }
 
                 var ids = subModule.GetCurrentClanMemberIds();
-                File.AppendAllText(debugPath, $"{DateTime.Now}: ids count = {ids.Count}\n");
+                if (ids.Count == 0)
+                {
+                    var defaultList = new Dropdown<HeroDisplayItem>(new[] { new HeroDisplayItem("all", "All") }, 0);
+                    SelectedResetHero = defaultList;
+                    SelectedAgeHero = defaultList;
+                    SelectedAgingHero = defaultList;
+                    return;
+                }
 
-                // Сохраняем текущий выбранный ID
-                string currentSelectedId = SelectedResetHero.SelectedValue?.Id ?? "all";
-
-                // Очищаем и заполняем заново
-                SelectedResetHero.Clear();
-                SelectedResetHero.Add(new HeroDisplayItem("all", "All"));
-
+                // Сортируем по имени
                 var heroes = Campaign.Current.AliveHeroes
                     .Where(h => ids.Contains(h.StringId))
                     .OrderBy(h => h.Name.ToString())
                     .ToList();
 
+                var options = new List<HeroDisplayItem> { new HeroDisplayItem("all", "All") };
                 foreach (var hero in heroes)
                 {
-                    // Для игрока добавим пометку (Player)
                     string displayName = hero.Name.ToString();
                     if (hero == Hero.MainHero)
                         displayName = $"{displayName} (Player)";
-                    SelectedResetHero.Add(new HeroDisplayItem(hero.StringId, displayName));
+                    options.Add(new HeroDisplayItem(hero.StringId, displayName));
                 }
 
-                // Восстанавливаем выбранный индекс
-                int newIndex = 0;
-                for (int i = 0; i < SelectedResetHero.Count; i++)
+                // Сохраняем текущие выбранные ID для каждого списка
+                string currentResetId = SelectedResetHero?.SelectedValue?.Id ?? "all";
+                string currentAgeId = SelectedAgeHero?.SelectedValue?.Id ?? "all";
+                string currentAgingId = SelectedAgingHero?.SelectedValue?.Id ?? "all";
+
+                // Функция для восстановления индекса
+                int GetIndex(string id)
                 {
-                    if (SelectedResetHero[i].Id == currentSelectedId)
-                    {
-                        newIndex = i;
-                        break;
-                    }
+                    for (int i = 0; i < options.Count; i++)
+                        if (options[i].Id == id)
+                            return i;
+                    return 0;
                 }
-                SelectedResetHero.SelectedIndex = newIndex;
 
-                // Принудительно уведомляем об изменениях
+                // Обновляем каждый список
+                SelectedResetHero = new Dropdown<HeroDisplayItem>(options, GetIndex(currentResetId));
+                SelectedAgeHero = new Dropdown<HeroDisplayItem>(options, GetIndex(currentAgeId));
+                SelectedAgingHero = new Dropdown<HeroDisplayItem>(options, GetIndex(currentAgingId));
+
+                // Уведомляем UI
                 OnPropertyChanged(nameof(SelectedResetHero));
+                OnPropertyChanged(nameof(SelectedAgeHero));
+                OnPropertyChanged(nameof(SelectedAgingHero));
                 OnPropertyChanged(nameof(SelectedHeroKillsDisplay));
-
-                File.AppendAllText(debugPath, $"{DateTime.Now}: SelectedResetHero count = {SelectedResetHero.Count}, selected index = {SelectedResetHero.SelectedIndex}, value = {SelectedResetHero.SelectedValue?.Id}\n");
             }
             catch (Exception ex)
             {
@@ -361,8 +476,16 @@ namespace JustRegeneration
         }
 
         // =====================================================================
+        // СЛОВАРИ ДЛЯ ХРАНЕНИЯ НАСТРОЕК ВОЗРАСТА И СТАРЕНИЯ
+        // =====================================================================
 
-        // --- Словарь убийств ---
+        public Dictionary<string, float> CustomAges { get; set; } = new Dictionary<string, float>();
+        public Dictionary<string, bool> DisableAgingFlags { get; set; } = new Dictionary<string, bool>();
+
+        // =====================================================================
+        // СЛОВАРЬ УБИЙСТВ И ПРОЧИЕ МЕТОДЫ
+        // =====================================================================
+
         public Dictionary<string, int> AccumulatedKillsPerHero { get; set; } = new Dictionary<string, int>();
 
         public int GetKillsForHero(Hero hero)
@@ -377,8 +500,6 @@ namespace JustRegeneration
             if (hero == null) return;
             string id = hero.StringId;
             AccumulatedKillsPerHero[id] = kills;
-            if (hero == Hero.MainHero)
-                UpdatePlayerDisplayKills();
         }
 
         public void AddKillsForHero(Hero hero, int killsToAdd)
@@ -390,24 +511,15 @@ namespace JustRegeneration
 
         public void UpdatePlayerDisplayKills()
         {
-            // Исправляем ошибку – проверяем Hero.MainHero на null
-            try
-            {
-                if (Hero.MainHero != null)
-                {
-                    // Раньше здесь было обновление текстового поля для игрока, но мы его убрали.
-                    // Оставляем пустым, чтобы не вызывать ошибок.
-                }
-            }
-            catch { }
+            // Устарело, оставлено для совместимости
         }
 
         public void SyncAgeFromHero(float currentAge)
         {
-            if (Math.Abs(_playerAge - currentAge) > 0.01f)
+            if (Math.Abs(_ageValue - currentAge) > 0.01f)
             {
-                _playerAge = currentAge;
-                OnPropertyChanged(nameof(PlayerAge));
+                _ageValue = currentAge;
+                OnPropertyChanged(nameof(AgeValue));
             }
         }
     }
