@@ -1146,6 +1146,7 @@ namespace JustRegeneration
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
+
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
