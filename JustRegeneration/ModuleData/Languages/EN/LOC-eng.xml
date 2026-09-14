@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <tags>
+    <tag language="English" />
+  </tags>
+  <strings>
+    <!-- Group names -->
+    <string id="JR_GroupMain"                   text="Main" />
+    <string id="JR_GroupGodMode"                text="God Mode" />
+    <string id="JR_GroupRegen"                  text="Regeneration" />
+    <string id="JR_GroupAge"                    text="Age" />
+    <string id="JR_GroupRejuvenationPlayer"     text="Rejuvenation (Player)" />
+    <string id="JR_GroupRejuvenationFamily"     text="Rejuvenation (Family Members)" />
+    <string id="JR_GroupRejuvenationCompanions" text="Rejuvenation (Companions)" />
+    <string id="JR_GroupReset"                  text="Reset Kill Counters" />
+    <string id="JR_GroupFocusPoints"            text="Focus Points (per level in vanilla)" />
+    <string id="JR_GroupAttentionPoints"        text="Attribute Points (per 4 levels in vanilla)" />
+
+    <!-- Main toggle -->
+    <string id="JR_EnableMod"              text="Enable mod" />
+    <string id="JR_EnableMod_Hint"         text="Master switch for all features." />
+
+    <!-- God Mode -->
+    <string id="JR_GodModePlayer"          text="God Mode (Player)" />
+    <string id="JR_GodModePlayer_Hint"     text="Player takes no damage." />
+    <string id="JR_GodModeMount"           text="God Mode (Mount)" />
+    <string id="JR_GodModeMount_Hint"      text="Player's mount takes no damage." />
+
+    <!-- Regeneration -->
+    <string id="JR_EnablePlayerRegen"      text="Enable Player Regen" />
+    <string id="JR_EnablePlayerRegen_Hint" text="Enable health regeneration for player." />
+    <string id="JR_PlayerDelay"            text="Player Delay (seconds)" />
+    <string id="JR_PlayerDelay_Hint"       text="Seconds after last damage before regen starts." />
+    <string id="JR_PlayerRate"             text="Player Rate (HP/sec)" />
+    <string id="JR_PlayerRate_Hint"        text="Health restored per second." />
+    <string id="JR_EnableMountRegen"       text="Enable Mount Regen" />
+    <string id="JR_EnableMountRegen_Hint"  text="Enable health regeneration for player's mount." />
+    <string id="JR_MountDelay"             text="Mount Delay (seconds)" />
+    <string id="JR_MountDelay_Hint"        text="Seconds after last damage before regen starts." />
+    <string id="JR_MountRate"              text="Mount Rate (HP/sec)" />
+    <string id="JR_MountRate_Hint"         text="Health restored per second." />
+
+    <!-- Age -->
+    <string id="JR_DisableAging"           text="Disable aging (Player only)" />
+    <string id="JR_DisableAging_Hint"      text="If enabled, the player's hero will not age. Current age will be locked." />
+    <string id="JR_PlayerAge"              text="Player Age" />
+    <string id="JR_PlayerAge_Hint"         text="Set the exact age of the player hero (0-100). Then click 'Apply Age Now'." />
+    <string id="JR_ApplyAgeButton"         text="Apply Age Now" />
+    <string id="JR_ApplyAgeButton_Hint"    text="Instantly sets the player's age to the value above (even if aging is not disabled)." />
+
+    <!-- Rejuvenation (Player) -->
+    <string id="JR_EnablePlayerRejuvenation"     text="Enable" />
+    <string id="JR_EnablePlayerRejuvenation_Hint" text="Enable age reduction for the player hero." />
+    <string id="JR_PlayerMinimumAge"             text="Minimum age" />
+    <string id="JR_PlayerMinimumAge_Hint"        text="Player cannot be younger than this age." />
+    <string id="JR_PlayerKillsPerRejuvenation"   text="Kills needed per rejuvenation" />
+    <string id="JR_PlayerKillsPerRejuvenation_Hint" text="Number of kills required to trigger rejuvenation." />
+    <string id="JR_PlayerDaysPerRejuvenation"    text="Days per rejuvenation" />
+    <string id="JR_PlayerDaysPerRejuvenation_Hint" text="How many days to rejuvenate when threshold is met." />
+
+    <!-- Rejuvenation (Family Members) -->
+    <string id="JR_EnableFamilyRejuvenation"     text="Enable" />
+    <string id="JR_EnableFamilyRejuvenation_Hint" text="Enable age reduction for family members." />
+    <string id="JR_FamilyMinimumAge"             text="Minimum age" />
+    <string id="JR_FamilyMinimumAge_Hint"        text="Family members cannot be younger than this age." />
+    <string id="JR_FamilyKillsPerRejuvenation"   text="Kills needed per rejuvenation" />
+    <string id="JR_FamilyKillsPerRejuvenation_Hint" text="Number of kills required to trigger rejuvenation." />
+    <string id="JR_FamilyDaysPerRejuvenation"    text="Days per rejuvenation" />
+    <string id="JR_FamilyDaysPerRejuvenation_Hint" text="How many days to rejuvenate when threshold is met." />
+
+    <!-- Rejuvenation (Companions) -->
+    <string id="JR_EnableCompanionRejuvenation"  text="Enable" />
+    <string id="JR_EnableCompanionRejuvenation_Hint" text="Enable age reduction for companions." />
+    <string id="JR_CompanionMinimumAge"          text="Minimum age" />
+    <string id="JR_CompanionMinimumAge_Hint"     text="Companions cannot be younger than this age." />
+    <string id="JR_CompanionKillsPerRejuvenation" text="Kills needed per rejuvenation" />
+    <string id="JR_CompanionKillsPerRejuvenation_Hint" text="Number of kills required to trigger rejuvenation." />
+    <string id="JR_CompanionDaysPerRejuvenation" text="Days per rejuvenation" />
+    <string id="JR_CompanionDaysPerRejuvenation_Hint" text="How many days to rejuvenate when threshold is met." />
+
+    <!-- Reset Kill Counters -->
+    <string id="JR_SelectHero"                 text="Select hero" />
+    <string id="JR_SelectHero_Hint"            text="Select a clan member to view/reset kills." />
+    <string id="JR_SelectedHeroKills"          text="Kills count" />
+    <string id="JR_SelectedHeroKills_Hint"     text="Current kill count for selected hero." />
+    <string id="JR_ResetKillsButton"           text="Reset kills" />
+    <string id="JR_ResetKillsButton_Hint"      text="Reset kill counter for selected hero or all." />
+
+    <!-- Focus Points (map to HeroDeveloper.UnspentFocusPoints) -->
+    <string id="JR_EnableFocusPoints"           text="Enable" />
+    <string id="JR_EnableFocusPoints_Hint"      text="Enable gaining FOCUS POINTS from kills (in vanilla these are given per level)." />
+    <string id="JR_KillsPerFocusPoint"          text="Kills per focus point" />
+    <string id="JR_KillsPerFocusPoint_Hint"     text="Number of kills required to gain 1 FOCUS POINT." />
+
+    <!-- Attribute Points (map to HeroDeveloper.UnspentAttributePoints) -->
+    <string id="JR_EnableAttentionPoints"       text="Enable" />
+    <string id="JR_EnableAttentionPoints_Hint"  text="Enable gaining ATTRIBUTE POINTS from kills (in vanilla these are given every 4 levels)." />
+    <string id="JR_KillsPerAttentionPoint"      text="Kills per attribute point" />
+    <string id="JR_KillsPerAttentionPoint_Hint" text="Number of kills required to gain 1 ATTRIBUTE POINT." />
+
+    <!-- In-game messages -->
+    <string id="JR_InitMessage"            text="Just Regeneration: Initialized." />
+    <string id="JR_GodModePatchActive"     text="Just Regeneration: God Mode patch (CalculateDamage) is active!" />
+    <string id="JR_KillsAccumulated"       text="Just Regeneration: {HERO} accumulated {COUNT} kills. {NEEDED} more kills needed for next rejuvenation." />
+    <string id="JR_AgeReduced"             text="Just Regeneration: {HERO} age reduced to {AGE:F1} years (used {USED} kills). Remaining kills: {REMAIN}." />
+    <string id="JR_FocusPointGained"       text="Just Regeneration: Gained {POINTS} FOCUS point(s). Remaining kills: {REMAIN}." />
+    <string id="JR_AttentionPointGained"   text="Just Regeneration: Gained {POINTS} ATTRIBUTE point(s). Remaining kills: {REMAIN}." />
+    <string id="JR_ResetKillsDone"         text="Just Regeneration: Kill counter for main hero reset to 0." />
+    <string id="JR_ResetSingleDone"        text="Just Regeneration: Kill counter for selected hero reset to 0." />
+    <string id="JR_ResetAllDone"           text="Just Regeneration: All clan member kill counters reset to 0." />
+    <string id="JR_ErrorLockingAge"        text="Just Regeneration: Error locking age: {MESSAGE}" />
+    <string id="JR_ErrorSavingData"        text="Just Regeneration: Error saving data: {MESSAGE}" />
+    <string id="JR_ErrorLoadingData"       text="Just Regeneration: Error loading data: {MESSAGE}" />
+  </strings>
+</base>

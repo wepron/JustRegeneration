@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <tags>
+    <tag language="Русский" />
+  </tags>
+  <strings>
+    <!-- Названия групп -->
+    <string id="JR_GroupMain"                   text="Основные" />
+    <string id="JR_GroupGodMode"                text="Режим бога" />
+    <string id="JR_GroupRegen"                  text="Регенерация" />
+    <string id="JR_GroupAge"                    text="Возраст" />
+    <string id="JR_GroupRejuvenationPlayer"     text="Омоложение (Игрок)" />
+    <string id="JR_GroupRejuvenationFamily"     text="Омоложение (Члены семьи)" />
+    <string id="JR_GroupRejuvenationCompanions" text="Омоложение (Спутники)" />
+    <string id="JR_GroupReset"                  text="Сброс счетчиков убийств" />
+    <string id="JR_GroupFocusPoints"            text="Очки внимания (фокуса) (в ванили — за уровень)" />
+    <string id="JR_GroupAttentionPoints"        text="Очки характеристик (в ванили — за 4 уровня)" />
+
+    <!-- Основной переключатель -->
+    <string id="JR_EnableMod"              text="Включить мод" />
+    <string id="JR_EnableMod_Hint"         text="Главный выключатель всех функций." />
+
+    <!-- Режим бога -->
+    <string id="JR_GodModePlayer"          text="Режим бога (игрок)" />
+    <string id="JR_GodModePlayer_Hint"     text="Игрок не получает урона." />
+    <string id="JR_GodModeMount"           text="Режим бога (конь)" />
+    <string id="JR_GodModeMount_Hint"      text="Конь игрока не получает урона." />
+
+    <!-- Регенерация -->
+    <string id="JR_EnablePlayerRegen"      text="Включить регенерацию игрока" />
+    <string id="JR_EnablePlayerRegen_Hint" text="Восстанавливает здоровье игрока." />
+    <string id="JR_PlayerDelay"            text="Задержка игрока (сек)" />
+    <string id="JR_PlayerDelay_Hint"       text="Секунд после последнего урона, прежде чем начнётся регенерация." />
+    <string id="JR_PlayerRate"             text="Скорость регенерации игрока (HP/сек)" />
+    <string id="JR_PlayerRate_Hint"        text="Здоровья восстанавливается в секунду." />
+    <string id="JR_EnableMountRegen"       text="Включить регенерацию коня" />
+    <string id="JR_EnableMountRegen_Hint"  text="Восстанавливает здоровье коня игрока." />
+    <string id="JR_MountDelay"             text="Задержка коня (сек)" />
+    <string id="JR_MountDelay_Hint"        text="Секунд после последнего урона, прежде чем начнётся регенерация." />
+    <string id="JR_MountRate"              text="Скорость регенерации коня (HP/сек)" />
+    <string id="JR_MountRate_Hint"         text="Здоровья восстанавливается в секунду." />
+
+    <!-- Возраст -->
+    <string id="JR_DisableAging"           text="Отключить старение (только игрок)" />
+    <string id="JR_DisableAging_Hint"      text="Если включено, герой игрока не стареет. Текущий возраст замораживается." />
+    <string id="JR_PlayerAge"              text="Возраст игрока" />
+    <string id="JR_PlayerAge_Hint"         text="Установите точный возраст героя (0–100). После нажмите &quot;Применить возраст сейчас&quot;." />
+    <string id="JR_ApplyAgeButton"         text="Применить возраст сейчас" />
+    <string id="JR_ApplyAgeButton_Hint"    text="Мгновенно устанавливает возраст, указанный выше (даже если старение не отключено)." />
+
+    <!-- Омоложение (Игрок) -->
+    <string id="JR_EnablePlayerRejuvenation"     text="Включить" />
+    <string id="JR_EnablePlayerRejuvenation_Hint" text="Включить уменьшение возраста для героя-игрока." />
+    <string id="JR_PlayerMinimumAge"             text="Минимальный возраст" />
+    <string id="JR_PlayerMinimumAge_Hint"        text="Игрок не может быть моложе этого возраста." />
+    <string id="JR_PlayerKillsPerRejuvenation"   text="Убийств для омоложения" />
+    <string id="JR_PlayerKillsPerRejuvenation_Hint" text="Количество убийств, необходимое для срабатывания омоложения." />
+    <string id="JR_PlayerDaysPerRejuvenation"    text="Омолодить на сколько дней" />
+    <string id="JR_PlayerDaysPerRejuvenation_Hint" text="На сколько дней уменьшить возраст при достижении порога." />
+
+    <!-- Омоложение (Члены семьи) -->
+    <string id="JR_EnableFamilyRejuvenation"     text="Включить" />
+    <string id="JR_EnableFamilyRejuvenation_Hint" text="Включить уменьшение возраста для членов семьи." />
+    <string id="JR_FamilyMinimumAge"             text="Минимальный возраст" />
+    <string id="JR_FamilyMinimumAge_Hint"        text="Члены семьи не могут быть моложе этого возраста." />
+    <string id="JR_FamilyKillsPerRejuvenation"   text="Убийств для омоложения" />
+    <string id="JR_FamilyKillsPerRejuvenation_Hint" text="Количество убийств, необходимое для срабатывания омоложения." />
+    <string id="JR_FamilyDaysPerRejuvenation"    text="Омолодить на сколько дней" />
+    <string id="JR_FamilyDaysPerRejuvenation_Hint" text="На сколько дней уменьшить возраст при достижении порога." />
+
+    <!-- Омоложение (Спутники) -->
+    <string id="JR_EnableCompanionRejuvenation"  text="Включить" />
+    <string id="JR_EnableCompanionRejuvenation_Hint" text="Включить уменьшение возраста для спутников." />
+    <string id="JR_CompanionMinimumAge"          text="Минимальный возраст" />
+    <string id="JR_CompanionMinimumAge_Hint"     text="Спутники не могут быть моложе этого возраста." />
+    <string id="JR_CompanionKillsPerRejuvenation" text="Убийств для омоложения" />
+    <string id="JR_CompanionKillsPerRejuvenation_Hint" text="Количество убийств, необходимое для срабатывания омоложения." />
+    <string id="JR_CompanionDaysPerRejuvenation" text="Омолодить на сколько дней" />
+    <string id="JR_CompanionDaysPerRejuvenation_Hint" text="На сколько дней уменьшить возраст при достижении порога." />
+
+    <!-- Сброс счетчиков убийств -->
+    <string id="JR_SelectHero"                 text="Выберите героя" />
+    <string id="JR_SelectHero_Hint"            text="Выберите члена клана для просмотра/сброса убийств." />
+    <string id="JR_SelectedHeroKills"          text="Количество убийств" />
+    <string id="JR_SelectedHeroKills_Hint"     text="Текущее количество убийств для выбранного героя." />
+    <string id="JR_ResetKillsButton"           text="Сбросить убийства" />
+    <string id="JR_ResetKillsButton_Hint"      text="Обнулить счётчик убийств для выбранного героя или для всех." />
+
+    <!-- Очки фокуса (идут в HeroDeveloper.UnspentFocusPoints) -->
+    <string id="JR_EnableFocusPoints"           text="Включить" />
+    <string id="JR_EnableFocusPoints_Hint"      text="Включить получение ОЧКОВ ВНИМАНИЯ за убийства (в ванили даются за каждый уровень)." />
+    <string id="JR_KillsPerFocusPoint"          text="Убийств на очко внимания" />
+    <string id="JR_KillsPerFocusPoint_Hint"     text="Количество убийств, необходимое для получения 1 ОЧКА ВНИМАНИЯ." />
+
+    <!-- Очки характеристик (идут в HeroDeveloper.UnspentAttributePoints) -->
+    <string id="JR_EnableAttentionPoints"       text="Включить" />
+    <string id="JR_EnableAttentionPoints_Hint"  text="Включить получение ОЧКОВ ХАРАКТЕРИСТИК за убийства (в ванили даются за каждые 4 уровня)." />
+    <string id="JR_KillsPerAttentionPoint"      text="Убийств на очко характеристик" />
+    <string id="JR_KillsPerAttentionPoint_Hint" text="Количество убийств, необходимое для получения 1 ОЧКА ХАРАКТЕРИСТИК." />
+
+    <!-- Сообщения в игре -->
+    <string id="JR_InitMessage"            text="Just Regeneration: Инициализирован." />
+    <string id="JR_GodModePatchActive"     text="Just Regeneration: Патч режима бога (CalculateDamage) активен!" />
+    <string id="JR_KillsAccumulated"       text="Just Regeneration: {HERO} накопил {COUNT} убийств. Осталось {NEEDED} для следующего омоложения." />
+    <string id="JR_AgeReduced"             text="Just Regeneration: Возраст {HERO} уменьшен до {AGE:F1} лет (использовано {USED} убийств). Осталось убийств: {REMAIN}." />
+    <string id="JR_FocusPointGained"       text="Just Regeneration: Получено {POINTS} ОЧКОВ ВНИМАНИЯ. Осталось убийств: {REMAIN}." />
+    <string id="JR_AttentionPointGained"   text="Just Regeneration: Получено {POINTS} ОЧКОВ ХАРАКТЕРИСТИК. Осталось убийств: {REMAIN}." />
+    <string id="JR_ResetKillsDone"         text="Just Regeneration: Счётчик убийств для главного героя сброшен на 0." />
+    <string id="JR_ResetSingleDone"        text="Just Regeneration: Счётчик убийств для выбранного героя сброшен на 0." />
+    <string id="JR_ResetAllDone"           text="Just Regeneration: Счётчики убийств для всех членов клана сброшены на 0." />
+    <string id="JR_ErrorLockingAge"        text="Just Regeneration: Ошибка при блокировке возраста: {MESSAGE}" />
+    <string id="JR_ErrorSavingData"        text="Just Regeneration: Ошибка сохранения данных: {MESSAGE}" />
+    <string id="JR_ErrorLoadingData"       text="Just Regeneration: Ошибка загрузки данных: {MESSAGE}" />
+  </strings>
+</base>

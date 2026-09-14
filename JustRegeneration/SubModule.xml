@@ -1,0 +1,24 @@
+<Module>
+  <Name value="Just Regeneration"/>
+  <Id value="JustRegeneration"/>
+  <Version value="v1.0.4"/>
+  <SingleplayerModule value="true"/>
+  <MultiplayerModule value="false"/>
+  <DependedModules>
+    <DependedModule Id="Bannerlord.Harmony" />
+    <DependedModule Id="Bannerlord.MBOptionScreen" />
+    <DependedModule Id="Native"/>
+    <DependedModule Id="SandBoxCore"/>
+    <DependedModule Id="Sandbox"/>
+    <DependedModule Id="CustomBattle"/>
+    <DependedModule Id="StoryMode" />
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="JustRegeneration"/>
+      <DLLName value="JustRegeneration.dll"/>
+      <SubModuleClassType value="JustRegeneration.MySubModule"/>
+    </SubModule>
+  </SubModules>
+  <Xmls/>
+</Module>
