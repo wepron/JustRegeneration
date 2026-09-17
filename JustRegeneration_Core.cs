@@ -516,7 +516,6 @@ namespace JustRegeneration
                         mainHero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
                         int usedKills = pointsToAward * settings.KillsPerFocusPoint;
                         settings.SetKillsForFocus(mainHero, totalFocusKills - usedKills);
-                        SavePointsData();
 
                         try
                         {
@@ -542,7 +541,6 @@ namespace JustRegeneration
                         mainHero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
                         int usedKills = pointsToAward * settings.KillsPerAttentionPoint;
                         settings.SetKillsForAttention(mainHero, totalAttentionKills - usedKills);
-                        SavePointsData();
 
                         try
                         {
@@ -554,6 +552,11 @@ namespace JustRegeneration
                         catch { }
                     }
                 }
+
+                // === ВСЕГДА сохраняем все счётчики после боя, даже если очко не выдано ===
+                // Это защищает от потери прогресса при зависании/краше игры.
+                SavePointsData();
+                SaveData();
 
                 _killsInCurrentMission.Clear();
             }
@@ -973,6 +976,20 @@ namespace JustRegeneration
         }
 
         // =====================================================================
+        // СОХРАНЕНИЕ / ЗАГРУЗКА (атомарная запись через .tmp)
+        // =====================================================================
+
+        private static void AtomicWriteAllLines(string path, IEnumerable<string> lines)
+        {
+            // Пишем во временный файл, затем подменяем основной.
+            // Это защищает от битых файлов, если игра крашнется во время записи.
+            string tmpPath = path + ".tmp";
+            File.WriteAllLines(tmpPath, lines);
+
+            if (File.Exists(path))
+                File.Delete(path);
+            File.Move(tmpPath, path);
+        }
 
         private void SaveData()
         {
@@ -982,7 +999,7 @@ namespace JustRegeneration
                 if (settings == null) return;
 
                 var lines = settings.AccumulatedKillsPerHero.Select(kvp => $"{kvp.Key}|{kvp.Value}").ToList();
-                File.WriteAllLines(SaveFilePath, lines);
+                AtomicWriteAllLines(SaveFilePath, lines);
             }
             catch (Exception ex) { LogError("SaveData", ex); }
         }
@@ -1061,7 +1078,7 @@ namespace JustRegeneration
                 foreach (var kvp in settings.DisableAgingFlags)
                     lines.Add($"{kvp.Key}|Aging|{kvp.Value}");
 
-                File.WriteAllLines(AgeSaveFilePath, lines);
+                AtomicWriteAllLines(AgeSaveFilePath, lines);
             }
             catch (Exception ex) { LogError("SaveAgeData", ex); }
         }
@@ -1079,7 +1096,7 @@ namespace JustRegeneration
                 foreach (var kvp in settings.AccumulatedKillsForAttention)
                     lines.Add($"Attention|{kvp.Key}|{kvp.Value}");
 
-                File.WriteAllLines(PointsSaveFilePath, lines);
+                AtomicWriteAllLines(PointsSaveFilePath, lines);
             }
             catch (Exception ex) { LogError("SavePointsData", ex); }
         }
