@@ -399,7 +399,7 @@ namespace JustRegeneration
 
         private bool _enableFocusPoints = false;
         [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points", GroupOrder = 110)]
-        [SettingPropertyBool("{=JR_EnableFocusPoints}Enable", Order = 0, RequireRestart = false, HintText = "{=JR_EnableFocusPoints_Hint}Enable gaining focus points from kills.")]
+        [SettingPropertyBool("{=JR_EnableFocusPoints}Enable (Player)", Order = 0, RequireRestart = false, HintText = "{=JR_EnableFocusPoints_Hint}Enable gaining focus points from kills.")]
         public bool EnableFocusPoints
         {
             get => _enableFocusPoints;
@@ -407,16 +407,42 @@ namespace JustRegeneration
         }
 
         [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
-        [SettingPropertyInteger("{=JR_KillsPerFocusPoint}Kills per focus point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point.")]
-        public int KillsPerFocusPoint { get; set; } = 1000;
+        [SettingPropertyInteger("{=JR_KillsPerFocusPoint}Kills per focus point (Player)", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point.")]
+        public int KillsPerFocusPoint { get; set; } = 50;
+
+        private bool _enableFamilyFocusPoints = false;
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
+        [SettingPropertyBool("{=JR_EnableFamilyFocusPoints}Enable (Family)", Order = 2, RequireRestart = false, HintText = "{=JR_EnableFamilyFocusPoints_Hint}Enable gaining focus points from kills for family members.")]
+        public bool EnableFamilyFocusPoints
+        {
+            get => _enableFamilyFocusPoints;
+            set { if (_enableFamilyFocusPoints != value) { _enableFamilyFocusPoints = value; OnPropertyChanged(nameof(EnableFamilyFocusPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
+        [SettingPropertyInteger("{=JR_FamilyKillsPerFocusPoint}Kills per focus point (Family)", 1, 10000, Order = 3, RequireRestart = false, HintText = "{=JR_FamilyKillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point for family members.")]
+        public int FamilyKillsPerFocusPoint { get; set; } = 50;
+
+        private bool _enableCompanionFocusPoints = false;
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
+        [SettingPropertyBool("{=JR_EnableCompanionFocusPoints}Enable (Companions)", Order = 4, RequireRestart = false, HintText = "{=JR_EnableCompanionFocusPoints_Hint}Enable gaining focus points from kills for companions.")]
+        public bool EnableCompanionFocusPoints
+        {
+            get => _enableCompanionFocusPoints;
+            set { if (_enableCompanionFocusPoints != value) { _enableCompanionFocusPoints = value; OnPropertyChanged(nameof(EnableCompanionFocusPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupFocusPoints}Focus Points")]
+        [SettingPropertyInteger("{=JR_CompanionKillsPerFocusPoint}Kills per focus point (Companions)", 1, 10000, Order = 5, RequireRestart = false, HintText = "{=JR_CompanionKillsPerFocusPoint_Hint}Number of kills required to gain 1 focus point for companions.")]
+        public int CompanionKillsPerFocusPoint { get; set; } = 50;
 
         // =====================================================================
-        // РАЗДЕЛ: ОЧКИ ВНИМАНИЯ (Attention Points)
+        // РАЗДЕЛ: ОЧКИ ВНИМАНИЯ / ХАРАКТЕРИСТИК (Attention Points)
         // =====================================================================
 
         private bool _enableAttentionPoints = false;
         [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points", GroupOrder = 120)]
-        [SettingPropertyBool("{=JR_EnableAttentionPoints}Enable", Order = 0, RequireRestart = false, HintText = "{=JR_EnableAttentionPoints_Hint}Enable gaining attention points from kills.")]
+        [SettingPropertyBool("{=JR_EnableAttentionPoints}Enable (Player)", Order = 0, RequireRestart = false, HintText = "{=JR_EnableAttentionPoints_Hint}Enable gaining attention points from kills.")]
         public bool EnableAttentionPoints
         {
             get => _enableAttentionPoints;
@@ -424,8 +450,34 @@ namespace JustRegeneration
         }
 
         [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
-        [SettingPropertyInteger("{=JR_KillsPerAttentionPoint}Kills per attention point", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point.")]
-        public int KillsPerAttentionPoint { get; set; } = 4000;
+        [SettingPropertyInteger("{=JR_KillsPerAttentionPoint}Kills per attention point (Player)", 1, 10000, Order = 1, RequireRestart = false, HintText = "{=JR_KillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point.")]
+        public int KillsPerAttentionPoint { get; set; } = 200;
+
+        private bool _enableFamilyAttentionPoints = false;
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
+        [SettingPropertyBool("{=JR_EnableFamilyAttentionPoints}Enable (Family)", Order = 2, RequireRestart = false, HintText = "{=JR_EnableFamilyAttentionPoints_Hint}Enable gaining attention points from kills for family members.")]
+        public bool EnableFamilyAttentionPoints
+        {
+            get => _enableFamilyAttentionPoints;
+            set { if (_enableFamilyAttentionPoints != value) { _enableFamilyAttentionPoints = value; OnPropertyChanged(nameof(EnableFamilyAttentionPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
+        [SettingPropertyInteger("{=JR_FamilyKillsPerAttentionPoint}Kills per attention point (Family)", 1, 10000, Order = 3, RequireRestart = false, HintText = "{=JR_FamilyKillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point for family members.")]
+        public int FamilyKillsPerAttentionPoint { get; set; } = 200;
+
+        private bool _enableCompanionAttentionPoints = false;
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
+        [SettingPropertyBool("{=JR_EnableCompanionAttentionPoints}Enable (Companions)", Order = 4, RequireRestart = false, HintText = "{=JR_EnableCompanionAttentionPoints_Hint}Enable gaining attention points from kills for companions.")]
+        public bool EnableCompanionAttentionPoints
+        {
+            get => _enableCompanionAttentionPoints;
+            set { if (_enableCompanionAttentionPoints != value) { _enableCompanionAttentionPoints = value; OnPropertyChanged(nameof(EnableCompanionAttentionPoints)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupAttentionPoints}Attention Points")]
+        [SettingPropertyInteger("{=JR_CompanionKillsPerAttentionPoint}Kills per attention point (Companions)", 1, 10000, Order = 5, RequireRestart = false, HintText = "{=JR_CompanionKillsPerAttentionPoint_Hint}Number of kills required to gain 1 attention point for companions.")]
+        public int CompanionKillsPerAttentionPoint { get; set; } = 200;
 
         // =====================================================================
         // МЕТОД ОБНОВЛЕНИЯ ВСЕХ ТРЁХ СПИСКОВ

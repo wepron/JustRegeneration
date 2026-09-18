@@ -103,8 +103,6 @@ namespace JustRegeneration
     [HarmonyPatch(typeof(Hero), "get_Age")]
     public static class Patch_HeroAge
     {
-        // Кэшируем приватное поле _defaultAge, чтобы читать возраст без вызова геттера get_Age
-        // (иначе получаем бесконечную рекурсию и StackOverflow).
         private static readonly FieldInfo _defaultAgeField =
             typeof(Hero).GetField("_defaultAge",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -136,8 +134,6 @@ namespace JustRegeneration
                         return false;
                     }
 
-                    // Нет сохранённого значения — берём _defaultAge напрямую через рефлексию,
-                    // НЕ вызывая __instance.Age (это привело бы к рекурсии).
                     if (_defaultAgeField != null)
                     {
                         float currentAge = (float)_defaultAgeField.GetValue(__instance);
@@ -333,7 +329,12 @@ namespace JustRegeneration
         {
             try
             {
-                if (agentState != AgentState.Killed)
+                // Считаем поверженных: и убитых (Killed), и вырубленных (Unconscious).
+                // Килы засчитываются только героям клана игрока (ГГ + семья + компаньоны),
+                // которые физически участвуют в текущей миссии. Если бой идёт без игрока
+                // (авторасчёт на карте) — здесь вообще ничего не сработает, потому что
+                // OnAgentRemoved вызывается только в миссиях.
+                if (agentState != AgentState.Killed && agentState != AgentState.Unconscious)
                     return;
 
                 if (!_isMissionValidForKillCounting)
@@ -343,16 +344,28 @@ namespace JustRegeneration
                 if (settings == null || !settings.EnableMod)
                     return;
 
-                if (affectorAgent == null || !affectorAgent.IsPlayerControlled)
-                    return;
-                if (affectedAgent == null || !affectedAgent.IsHuman)
-                    return;
-                if (affectorAgent.Team == null || affectedAgent.Team == null)
-                    return;
-                if (!affectorAgent.Team.IsEnemyOf(affectedAgent.Team))
+                if (affectorAgent == null || affectedAgent == null)
                     return;
 
-                CharacterObject character = affectorAgent.Character as CharacterObject;
+                // Если ударил маунт (затоптал), победу засчитываем его всаднику.
+                Agent actualAffector = affectorAgent;
+                if (affectorAgent.IsMount)
+                {
+                    Agent rider = affectorAgent.RiderAgent;
+                    if (rider != null)
+                        actualAffector = rider;
+                    else
+                        return; // вольный конь без всадника — никому не засчитываем
+                }
+
+                if (!actualAffector.IsHuman || !affectedAgent.IsHuman)
+                    return;
+                if (actualAffector.Team == null || affectedAgent.Team == null)
+                    return;
+                if (!actualAffector.Team.IsEnemyOf(affectedAgent.Team))
+                    return;
+
+                CharacterObject character = actualAffector.Character as CharacterObject;
                 if (character == null)
                     return;
                 Hero killerHero = character.HeroObject;
@@ -367,15 +380,26 @@ namespace JustRegeneration
 
                 bool isPlayer = killerHero == mainHero;
                 bool isFamily = !isPlayer && killerHero.Clan != null && killerHero.Clan == mainHero.Clan && !killerHero.IsWanderer;
-                bool isCompanion = killerHero.IsWanderer;
+                bool isCompanion = !isPlayer && killerHero.IsWanderer && killerHero.Clan == mainHero.Clan;
 
                 if (!isPlayer && !isFamily && !isCompanion)
                     return;
-                if (isPlayer && !settings.EnablePlayerRejuvenation && !settings.EnableFocusPoints && !settings.EnableAttentionPoints)
-                    return;
-                if (isFamily && !settings.EnableFamilyRejuvenation)
-                    return;
-                if (isCompanion && !settings.EnableCompanionRejuvenation)
+
+                bool anyEnabled;
+                if (isPlayer)
+                    anyEnabled = settings.EnablePlayerRejuvenation
+                                 || settings.EnableFocusPoints
+                                 || settings.EnableAttentionPoints;
+                else if (isFamily)
+                    anyEnabled = settings.EnableFamilyRejuvenation
+                                 || settings.EnableFamilyFocusPoints
+                                 || settings.EnableFamilyAttentionPoints;
+                else
+                    anyEnabled = settings.EnableCompanionRejuvenation
+                                 || settings.EnableCompanionFocusPoints
+                                 || settings.EnableCompanionAttentionPoints;
+
+                if (!anyEnabled)
                     return;
 
                 if (_killsInCurrentMission.ContainsKey(killerHero))
@@ -384,6 +408,145 @@ namespace JustRegeneration
                     _killsInCurrentMission[killerHero] = 1;
             }
             catch (Exception ex) { LogError("OnAgentRemovedInternal", ex); }
+        }
+
+        private void ProcessHeroAwards(Hero hero, bool isPlayer, bool isFamily, bool isCompanion, JustRegenerationSettings settings)
+        {
+            try
+            {
+                if (hero == null) return;
+                // Раненых не отсекаем — очки должны начисляться и им.
+                if (hero.HeroState == Hero.CharacterStates.Dead) return;
+                if (hero.HeroDeveloper == null) return;
+
+                // --- Focus Points ---
+                bool focusEnabled;
+                int focusThreshold;
+                if (isPlayer) { focusEnabled = settings.EnableFocusPoints; focusThreshold = settings.KillsPerFocusPoint; }
+                else if (isFamily) { focusEnabled = settings.EnableFamilyFocusPoints; focusThreshold = settings.FamilyKillsPerFocusPoint; }
+                else { focusEnabled = settings.EnableCompanionFocusPoints; focusThreshold = settings.CompanionKillsPerFocusPoint; }
+
+                if (focusEnabled && focusThreshold > 0)
+                {
+                    int totalFocusKills = settings.GetKillsForFocus(hero);
+                    int pointsToAward = totalFocusKills / focusThreshold;
+                    if (pointsToAward > 0)
+                    {
+                        hero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
+                        settings.SetKillsForFocus(hero, totalFocusKills - pointsToAward * focusThreshold);
+
+                        try
+                        {
+                            TextObject msg = new TextObject("{=JR_FocusPointGained}Just Regeneration: {HERO} gained {POINTS} FOCUS point(s). Remaining kills: {REMAIN}.");
+                            msg.SetTextVariable("HERO", hero.Name);
+                            msg.SetTextVariable("POINTS", pointsToAward);
+                            msg.SetTextVariable("REMAIN", totalFocusKills - pointsToAward * focusThreshold);
+                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                        }
+                        catch { }
+                    }
+                }
+
+                // --- Attention Points ---
+                bool attEnabled;
+                int attThreshold;
+                if (isPlayer) { attEnabled = settings.EnableAttentionPoints; attThreshold = settings.KillsPerAttentionPoint; }
+                else if (isFamily) { attEnabled = settings.EnableFamilyAttentionPoints; attThreshold = settings.FamilyKillsPerAttentionPoint; }
+                else { attEnabled = settings.EnableCompanionAttentionPoints; attThreshold = settings.CompanionKillsPerAttentionPoint; }
+
+                if (attEnabled && attThreshold > 0)
+                {
+                    int totalAttKills = settings.GetKillsForAttention(hero);
+                    int pointsToAward = totalAttKills / attThreshold;
+                    if (pointsToAward > 0)
+                    {
+                        hero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
+                        settings.SetKillsForAttention(hero, totalAttKills - pointsToAward * attThreshold);
+
+                        try
+                        {
+                            TextObject msg = new TextObject("{=JR_AttentionPointGained}Just Regeneration: {HERO} gained {POINTS} ATTRIBUTE point(s). Remaining kills: {REMAIN}.");
+                            msg.SetTextVariable("HERO", hero.Name);
+                            msg.SetTextVariable("POINTS", pointsToAward);
+                            msg.SetTextVariable("REMAIN", totalAttKills - pointsToAward * attThreshold);
+                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
+                        }
+                        catch { }
+                    }
+                }
+
+                // --- Rejuvenation ---
+                ProcessRejuvenationForHero(hero, isPlayer, isFamily, isCompanion, settings);
+            }
+            catch (Exception ex) { LogError("ProcessHeroAwards", ex); }
+        }
+
+        private void ProcessRejuvenationForHero(Hero hero, bool isPlayer, bool isFamily, bool isCompanion, JustRegenerationSettings settings)
+        {
+            try
+            {
+                if (hero == null) return;
+                // Раненых не отсекаем — омоложение должно работать и для них.
+                if (hero.HeroState == Hero.CharacterStates.Dead) return;
+
+                bool enabled;
+                int minAge, killsNeeded, daysPer;
+                if (isPlayer)
+                {
+                    enabled = settings.EnablePlayerRejuvenation;
+                    minAge = settings.PlayerMinimumAge;
+                    killsNeeded = settings.PlayerKillsPerRejuvenation;
+                    daysPer = settings.PlayerDaysPerRejuvenation;
+                }
+                else if (isFamily)
+                {
+                    enabled = settings.EnableFamilyRejuvenation;
+                    minAge = settings.FamilyMinimumAge;
+                    killsNeeded = settings.FamilyKillsPerRejuvenation;
+                    daysPer = settings.FamilyDaysPerRejuvenation;
+                }
+                else
+                {
+                    enabled = settings.EnableCompanionRejuvenation;
+                    minAge = settings.CompanionMinimumAge;
+                    killsNeeded = settings.CompanionKillsPerRejuvenation;
+                    daysPer = settings.CompanionDaysPerRejuvenation;
+                }
+
+                if (!enabled || killsNeeded <= 0) return;
+
+                int totalKills = settings.GetKillsForHero(hero);
+                if (totalKills < killsNeeded) return;
+
+                int times = totalKills / killsNeeded;
+                if (times <= 0) return;
+
+                float currentAge = hero.Age;
+                float newAge = currentAge - (times * daysPer) / 365f;
+                float minAgeFloat = Math.Max(0f, minAge);
+                if (newAge < minAgeFloat)
+                    newAge = minAgeFloat;
+
+                if (Math.Abs(newAge - currentAge) > 0.001f)
+                {
+                    ApplyAgeToHero(hero, newAge);
+                    int usedKills = times * killsNeeded;
+                    int remaining = totalKills - usedKills;
+                    settings.SetKillsForHero(hero, remaining);
+
+                    try
+                    {
+                        TextObject ageMsg = new TextObject("{=JR_AgeReduced}Just Regeneration: {HERO} age reduced to {AGE:F1} years (used {USED} kills). Remaining kills: {REMAIN}.");
+                        ageMsg.SetTextVariable("HERO", hero.Name);
+                        ageMsg.SetTextVariable("AGE", newAge);
+                        ageMsg.SetTextVariable("USED", usedKills);
+                        ageMsg.SetTextVariable("REMAIN", remaining);
+                        InformationManager.DisplayMessage(new InformationMessage(ageMsg.ToString()));
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex) { LogError("ProcessRejuvenationForHero", ex); }
         }
 
         private void OnMissionEnded(IMission mission)
@@ -395,166 +558,61 @@ namespace JustRegeneration
 
                 var settings = JustRegenerationSettings.Instance;
                 if (settings == null || !settings.EnableMod)
+                {
+                    _killsInCurrentMission.Clear();
                     return;
+                }
 
                 Hero mainHero;
                 try { mainHero = Hero.MainHero; }
                 catch { mainHero = null; }
 
+                // 1) Начисляем килы всем героям клана, которые отличились в миссии.
+                //    Раненых и активных считаем; пропускаем только реально мёртвых.
                 foreach (var kvp in _killsInCurrentMission)
                 {
-                    Hero hero = kvp.Key;
-                    int killsInMission = kvp.Value;
-                    settings.AddKillsForHero(hero, killsInMission);
+                    if (kvp.Key == null) continue;
+                    if (kvp.Key.HeroState == Hero.CharacterStates.Dead) continue;
+                    settings.AddKillsForHero(kvp.Key, kvp.Value);
                 }
                 SaveData();
 
+                // 2) Теперь для каждого героя прогоняем фокус/внимание/омоложение.
                 foreach (var kvp in _killsInCurrentMission)
                 {
                     Hero hero = kvp.Key;
                     if (hero == null) continue;
+                    if (hero.HeroState == Hero.CharacterStates.Dead) continue;
 
                     bool isPlayer = mainHero != null && hero == mainHero;
-                    bool isFamily = !isPlayer && hero.Clan != null && mainHero != null && hero.Clan == mainHero.Clan && !hero.IsWanderer;
-                    bool isCompanion = hero.IsWanderer;
+                    bool isCompanion = !isPlayer && hero.IsWanderer;
+                    bool isFamily = !isPlayer && !isCompanion;
 
-                    if (!isPlayer && !isFamily && !isCompanion)
-                        continue;
-
-                    bool enabled;
-                    int minAge, killsNeeded, daysPer;
                     if (isPlayer)
                     {
-                        enabled = settings.EnablePlayerRejuvenation;
-                        minAge = settings.PlayerMinimumAge;
-                        killsNeeded = settings.PlayerKillsPerRejuvenation;
-                        daysPer = settings.PlayerDaysPerRejuvenation;
+                        if (settings.EnableFocusPoints)
+                            settings.AddKillsForFocus(hero, kvp.Value);
+                        if (settings.EnableAttentionPoints)
+                            settings.AddKillsForAttention(hero, kvp.Value);
                     }
                     else if (isFamily)
                     {
-                        enabled = settings.EnableFamilyRejuvenation;
-                        minAge = settings.FamilyMinimumAge;
-                        killsNeeded = settings.FamilyKillsPerRejuvenation;
-                        daysPer = settings.FamilyDaysPerRejuvenation;
+                        if (settings.EnableFamilyFocusPoints)
+                            settings.AddKillsForFocus(hero, kvp.Value);
+                        if (settings.EnableFamilyAttentionPoints)
+                            settings.AddKillsForAttention(hero, kvp.Value);
                     }
                     else // companion
                     {
-                        enabled = settings.EnableCompanionRejuvenation;
-                        minAge = settings.CompanionMinimumAge;
-                        killsNeeded = settings.CompanionKillsPerRejuvenation;
-                        daysPer = settings.CompanionDaysPerRejuvenation;
+                        if (settings.EnableCompanionFocusPoints)
+                            settings.AddKillsForFocus(hero, kvp.Value);
+                        if (settings.EnableCompanionAttentionPoints)
+                            settings.AddKillsForAttention(hero, kvp.Value);
                     }
 
-                    if (!enabled)
-                        continue;
-
-                    int totalKills = settings.GetKillsForHero(hero);
-                    if (totalKills >= killsNeeded)
-                    {
-                        int times = totalKills / killsNeeded;
-                        if (times > 0)
-                        {
-                            float currentAge = hero.Age;
-                            float newAge = currentAge - (times * daysPer) / 365f;
-                            float minAgeFloat = Math.Max(0f, minAge);
-                            if (newAge < minAgeFloat)
-                                newAge = minAgeFloat;
-
-                            if (Math.Abs(newAge - currentAge) > 0.001f)
-                            {
-                                ApplyAgeToHero(hero, newAge);
-                                int usedKills = times * killsNeeded;
-                                int remaining = totalKills - usedKills;
-                                settings.SetKillsForHero(hero, remaining);
-
-                                if (isPlayer && Campaign.Current != null)
-                                {
-                                    try
-                                    {
-                                        TextObject ageMsg = new TextObject("{=JR_AgeReduced}Just Regeneration: {HERO} age reduced to {AGE:F1} years (used {USED} kills). Remaining kills: {REMAIN}.");
-                                        ageMsg.SetTextVariable("HERO", hero.Name);
-                                        ageMsg.SetTextVariable("AGE", newAge);
-                                        ageMsg.SetTextVariable("USED", usedKills);
-                                        ageMsg.SetTextVariable("REMAIN", remaining);
-                                        InformationManager.DisplayMessage(new InformationMessage(ageMsg.ToString()));
-                                    }
-                                    catch { }
-                                }
-                                SaveData();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (isPlayer && Campaign.Current != null)
-                        {
-                            int killsLeft = killsNeeded - (totalKills % killsNeeded);
-                            if (killsLeft == 0) killsLeft = killsNeeded;
-                            try
-                            {
-                                TextObject progressMsg = new TextObject("{=JR_KillsAccumulated}Just Regeneration: {HERO} accumulated {COUNT} kills. {NEEDED} more kills needed for next rejuvenation.");
-                                progressMsg.SetTextVariable("HERO", hero.Name);
-                                progressMsg.SetTextVariable("COUNT", totalKills);
-                                progressMsg.SetTextVariable("NEEDED", killsLeft);
-                                InformationManager.DisplayMessage(new InformationMessage(progressMsg.ToString()));
-                            }
-                            catch { }
-                        }
-                    }
+                    ProcessHeroAwards(hero, isPlayer, isFamily, isCompanion, settings);
                 }
 
-                // ================== НОВАЯ ЛОГИКА: FOCUS POINTS ==================
-                if (settings.EnableFocusPoints && mainHero != null
-                    && _killsInCurrentMission.TryGetValue(mainHero, out int playerKillsFocus)
-                    && playerKillsFocus > 0)
-                {
-                    settings.AddKillsForFocus(mainHero, playerKillsFocus);
-                    int totalFocusKills = settings.GetKillsForFocus(mainHero);
-                    int pointsToAward = totalFocusKills / settings.KillsPerFocusPoint;
-                    if (pointsToAward > 0)
-                    {
-                        mainHero.HeroDeveloper.UnspentFocusPoints += pointsToAward;
-                        int usedKills = pointsToAward * settings.KillsPerFocusPoint;
-                        settings.SetKillsForFocus(mainHero, totalFocusKills - usedKills);
-
-                        try
-                        {
-                            TextObject msg = new TextObject("{=JR_FocusPointGained}Just Regeneration: Gained {POINTS} focus point(s). Remaining kills: {REMAIN}.");
-                            msg.SetTextVariable("POINTS", pointsToAward);
-                            msg.SetTextVariable("REMAIN", totalFocusKills - usedKills);
-                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
-                        }
-                        catch { }
-                    }
-                }
-
-                // ================== НОВАЯ ЛОГИКА: ATTENTION POINTS ==================
-                if (settings.EnableAttentionPoints && mainHero != null
-                    && _killsInCurrentMission.TryGetValue(mainHero, out int playerKillsAttention)
-                    && playerKillsAttention > 0)
-                {
-                    settings.AddKillsForAttention(mainHero, playerKillsAttention);
-                    int totalAttentionKills = settings.GetKillsForAttention(mainHero);
-                    int pointsToAward = totalAttentionKills / settings.KillsPerAttentionPoint;
-                    if (pointsToAward > 0)
-                    {
-                        mainHero.HeroDeveloper.UnspentAttributePoints += pointsToAward;
-                        int usedKills = pointsToAward * settings.KillsPerAttentionPoint;
-                        settings.SetKillsForAttention(mainHero, totalAttentionKills - usedKills);
-
-                        try
-                        {
-                            TextObject msg = new TextObject("{=JR_AttentionPointGained}Just Regeneration: Gained {POINTS} attention point(s). Remaining kills: {REMAIN}.");
-                            msg.SetTextVariable("POINTS", pointsToAward);
-                            msg.SetTextVariable("REMAIN", totalAttentionKills - usedKills);
-                            InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
-                        }
-                        catch { }
-                    }
-                }
-
-                // === ВСЕГДА сохраняем все счётчики после боя, даже если очко не выдано ===
-                // Это защищает от потери прогресса при зависании/краше игры.
                 SavePointsData();
                 SaveData();
 
@@ -603,15 +661,9 @@ namespace JustRegeneration
             catch (Exception ex) { LogError("ApplyAgeToHero", ex); }
         }
 
-        public void ApplyPlayerAge()
-        {
-            // устаревший метод, оставлен для совместимости
-        }
+        public void ApplyPlayerAge() { }
 
-        public void LockCurrentPlayerAge()
-        {
-            // устаревший метод, оставлен для совместимости
-        }
+        public void LockCurrentPlayerAge() { }
 
         public void ResetAccumulatedKills()
         {
@@ -650,10 +702,7 @@ namespace JustRegeneration
             }
         }
 
-        private void SyncAgeOnLoad()
-        {
-            // устаревший метод, оставлен для совместимости
-        }
+        private void SyncAgeOnLoad() { }
 
         public void RegisterDamage(Agent victim, float damage)
         {
@@ -781,9 +830,6 @@ namespace JustRegeneration
             }
             catch
             {
-                // Hero.MainHero может бросать NullReferenceException в момент,
-                // когда кампания ещё не полностью инициализирована (например,
-                // при старте новой игры / создании персонажа).
                 return result;
             }
 
@@ -796,7 +842,8 @@ namespace JustRegeneration
 
             foreach (var hero in clan.Heroes)
             {
-                if (hero != null && hero.IsAlive)
+                // Раненых не отсекаем — только реально мёртвых.
+                if (hero != null && hero.HeroState != Hero.CharacterStates.Dead)
                     result.Add(hero.StringId);
             }
             return result;
@@ -981,8 +1028,6 @@ namespace JustRegeneration
 
         private static void AtomicWriteAllLines(string path, IEnumerable<string> lines)
         {
-            // Пишем во временный файл, затем подменяем основной.
-            // Это защищает от битых файлов, если игра крашнется во время записи.
             string tmpPath = path + ".tmp";
             File.WriteAllLines(tmpPath, lines);
 
