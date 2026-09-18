@@ -480,6 +480,27 @@ namespace JustRegeneration
         public int CompanionKillsPerAttentionPoint { get; set; } = 200;
 
         // =====================================================================
+        // РАЗДЕЛ: ЛИМИТЫ (Point Limits)
+        // =====================================================================
+
+        private bool _enablePointLimits = true;
+        [SettingPropertyGroup("{=JR_GroupLimits}Point Limits", GroupOrder = 130)]
+        [SettingPropertyBool("{=JR_EnablePointLimits}Enable limits", Order = 0, RequireRestart = false, HintText = "{=JR_EnablePointLimits_Hint}If enabled, points are not awarded beyond the vanilla caps (60 attributes / 90 focus). Excess kills are discarded.")]
+        public bool EnablePointLimits
+        {
+            get => _enablePointLimits;
+            set { if (_enablePointLimits != value) { _enablePointLimits = value; OnPropertyChanged(nameof(EnablePointLimits)); } }
+        }
+
+        [SettingPropertyGroup("{=JR_GroupLimits}Point Limits")]
+        [SettingPropertyInteger("{=JR_FocusPointLimit}Focus points cap (per hero)", 1, 500, Order = 1, RequireRestart = false, HintText = "{=JR_FocusPointLimit_Hint}Total focus points a single hero can have (spent + unspent). Vanilla maximum is 90.")]
+        public int FocusPointLimit { get; set; } = 90;
+
+        [SettingPropertyGroup("{=JR_GroupLimits}Point Limits")]
+        [SettingPropertyInteger("{=JR_AttributePointLimit}Attribute points cap (per hero)", 1, 500, Order = 2, RequireRestart = false, HintText = "{=JR_AttributePointLimit_Hint}Total attribute points a single hero can have (spent + unspent). Vanilla maximum is 60.")]
+        public int AttributePointLimit { get; set; } = 60;
+
+        // =====================================================================
         // МЕТОД ОБНОВЛЕНИЯ ВСЕХ ТРЁХ СПИСКОВ
         // =====================================================================
 
